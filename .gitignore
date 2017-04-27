@@ -1,0 +1,11 @@
+.idea
+.gradle
+*.iml
+build
+out
+
+application-*.yml
+GitVer.java
+gradle.properties
+*.log
+*.out
