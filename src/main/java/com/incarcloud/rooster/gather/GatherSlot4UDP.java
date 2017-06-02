@@ -5,6 +5,12 @@ import io.netty.channel.*;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 
+/**
+ * UDP协议的采集处理槽
+ * 
+ * @author 熊广化
+ *
+ */
 class GatherSlot4UDP extends GatherSlot{
     private static final int BACKLOG_COUNT = 1024;
     private int _port;
@@ -32,6 +38,8 @@ class GatherSlot4UDP extends GatherSlot{
     void start(){
         ChannelFuture future = _bootstrap.bind(_port);
         _channel = future.channel();
+        
+        
         _bootstrap = null; // 可以释放掉了
         try {
             future.sync();
