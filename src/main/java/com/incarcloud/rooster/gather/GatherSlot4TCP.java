@@ -5,12 +5,23 @@ import io.netty.channel.*;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 
+/**
+ * TCP协议的采集处理槽
+ * 
+ * @author 熊广化
+ *
+ */
 class GatherSlot4TCP extends GatherSlot {
     private static final int BACKLOG_COUNT = 1024;
     private int _port;
     private Channel _channel;
     private ServerBootstrap _bootstrap;
 
+    /**
+     * 
+     * @param port 端口
+     * @param host 宿主
+     */
     GatherSlot4TCP(int port, GatherHost host){
         super(host);
         GatherSlot _this = this;
