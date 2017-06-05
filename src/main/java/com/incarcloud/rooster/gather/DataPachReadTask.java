@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.incarcloud.rooster.datapack.DataPack;
+import com.incarcloud.rooster.datapack.ERespReason;
 import com.incarcloud.rooster.datapack.IDataParser;
 import com.incarcloud.rooster.mq.IBigMQ;
 import com.incarcloud.rooster.mq.MQMsg;
@@ -15,7 +16,7 @@ import com.incarcloud.rooster.mq.MqSendResult;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
-import io.netty.handler.codec.http.HttpContentEncoder.Result;
+import io.netty.util.ReferenceCountUtil;
 
 /**
  * 处理读取的数据包的任务
@@ -23,14 +24,14 @@ import io.netty.handler.codec.http.HttpContentEncoder.Result;
  * @author 范贝贝
  *
  */
-public class DataPachReadTask implements Runnable{
+public class DataPachReadTask implements Runnable {
 	private static Logger s_logger = LoggerFactory.getLogger(GatherChannelHandler.class);
-	
+
 	/**
 	 * 任务名称（线程的标识）
 	 */
 	private String name;
-	
+
 	/**
 	 * nio 通道
 	 */
@@ -43,97 +44,118 @@ public class DataPachReadTask implements Runnable{
 	 * 数据转换器
 	 */
 	private IDataParser parser;
-	
-	private IBigMQ bigMQ;
-	
-	
+
 	/**
-	 * @param channel nio 通道
-	 * @param binaryData 接受到的二进制数据
-	 * @param parser 数据转换器
+	 * 发送消息接口
 	 */
-	public DataPachReadTask(Channel channel, ByteBuf binaryData, IDataParser parser) {
-		this.name = "-DataPachReadTask"+new Date().getTime();
+	private IBigMQ bigMQ;
+
+	/**
+	 * @param channel
+	 *            nio 通道
+	 * @param binaryData
+	 *            接受到的二进制数据
+	 * @param parser
+	 *            数据转换器
+	 * @param bigMQ
+	 *            发布消息的接口
+	 */
+	public DataPachReadTask(Channel channel, ByteBuf binaryData, IDataParser parser, IBigMQ bigMQ) {
+		this.name = "-DataPachReadTask" + new Date().getTime();
 		this.channel = channel;
 		this.binaryData = binaryData;
 		this.parser = parser;
+		this.bigMQ = bigMQ;
 	}
 
 	/**
-	 * @param name 任务名称（线程的标识）
-	 * @param channel nio 通道
-	 * @param binaryData 接受到的二进制数据
-	 * @param parser 数据转换器
+	 * @param name
+	 *            任务名称（线程的标识）
+	 * @param channel
+	 *            nio 通道
+	 * @param binaryData
+	 *            接受到的二进制数据
+	 * @param parser
+	 *            数据转换器
+	 * @param bigMQ
+	 *            发布消息的接口
 	 */
-	public DataPachReadTask(String name, Channel channel,ByteBuf binaryData, IDataParser parser) {
+	public DataPachReadTask(String name, Channel channel, ByteBuf binaryData, IDataParser parser, IBigMQ bigMQ) {
 		this.name = name;
 		this.channel = channel;
 		this.binaryData = binaryData;
 		this.parser = parser;
+		this.bigMQ = bigMQ;
 	}
 
 	@Override
 	public void run() {
-		//1、解析包
-		List<DataPack> listPacks = parser.extract(binaryData);
-		binaryData.discardSomeReadBytes();
+		// System.out.println(binaryData);
+		// 1、解析包
+		List<DataPack> listPacks = null;
+		try {
+			listPacks = parser.extract(binaryData);
+			binaryData.discardSomeReadBytes();
 
-		if(null == listPacks){
-			s_logger.info("no packs!!");
-			return;
-		}
-		
-		
-		//2、发送到消息队列
-		List<MQMsg>  msgList = new ArrayList<>(listPacks.size());
-		
-		for (DataPack pack : listPacks) {
-			MQMsg mqMsg = new MQMsg();
-			mqMsg.setMark(pack.getMark());
-			mqMsg.setData(pack.getDataB64().getBytes());
-			
-		}
-		
-		List<MqSendResult> resultList = bigMQ.post(msgList);
-		
-		
-//		parser.createResponse(requestPack, reason);
-		
-		
-		
-		//释放内存
-        for(DataPack pack : listPacks){
-        	
-            pack.freeBuf();
-        }
+			if (null == listPacks) {
+				s_logger.info("no packs!!");
+				return;
+			}
 
-        
-		
+			// 2、发送到消息队列
+			List<MQMsg> msgList = new ArrayList<>(listPacks.size());
+
+			for (DataPack pack : listPacks) {
+				MQMsg mqMsg = new MQMsg();
+				mqMsg.setMark(pack.getMark());
+				mqMsg.setData(pack.getDataB64().getBytes());
+
+				System.out.println(name + "&&&&&&" + mqMsg);
+			}
+
+			List<MqSendResult> resultList = bigMQ.post(msgList);
+
+			for (int i = 0; i < resultList.size(); i++) {
+				MqSendResult result = resultList.get(i);
+				if (null == result.getException()) {// 正常返回
+					s_logger.debug("success send to MQ:" + result.getData());
+
+					ByteBuf resp = parser.createResponse(listPacks.get(i), ERespReason.OK);
+					channel.writeAndFlush(resp);
+					ReferenceCountUtil.release(resp);
+
+				} else {
+
+					s_logger.error("failed send to MQ:" + result.getException().getMessage());
+
+					ByteBuf resp = parser.createResponse(listPacks.get(i), ERespReason.Failed);
+					channel.writeAndFlush(resp);
+					ReferenceCountUtil.release(resp);
+
+				}
+			}
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			// 释放内存
+			if (null != listPacks) {
+				for (DataPack pack : listPacks) {
+
+					pack.freeBuf();
+				}
+			}
+		}
+
 	}
-	
-	
+
 	/**
-	 * 发送数据到
-	 * @param listPacks
-	 * @return
-	 */
-	private List<MqSendResult> postMQ(List<DataPack> listPacks){
-		
-		
-		return null;
-		
-	}
-	
-	
-	
-
-	/** 
-	 * 获取 任务名称（线程的标识） 
-	 * @return name 
+	 * 获取 任务名称（线程的标识）
+	 * 
+	 * @return name
 	 */
 	public String getName() {
 		return name;
 	}
-	
 
 }

@@ -28,6 +28,8 @@ public class GatherHost {
 	 */
 	private String name;
 	
+	private IBigMQ bigMQ;
+	
 	private EventLoopGroup _bossGroup;
 	private EventLoopGroup _workerGroup;
 
@@ -149,5 +151,17 @@ public class GatherHost {
 	public String getName() {
 		return name;
 	}
+
+
+	public IBigMQ getBigMQ() {
+		return bigMQ;
+	}
+	
+
+
+	public void setBigMQ(IBigMQ bigMQ) {
+		this.bigMQ = bigMQ;
+	}
+	
 
 }
