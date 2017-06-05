@@ -1,5 +1,6 @@
 package com.incarcloud.rooster.gather;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -8,10 +9,13 @@ import org.slf4j.LoggerFactory;
 
 import com.incarcloud.rooster.datapack.DataPack;
 import com.incarcloud.rooster.datapack.IDataParser;
+import com.incarcloud.rooster.mq.IBigMQ;
+import com.incarcloud.rooster.mq.MQMsg;
 import com.incarcloud.rooster.mq.MqSendResult;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
+import io.netty.handler.codec.http.HttpContentEncoder.Result;
 
 /**
  * 处理读取的数据包的任务
@@ -39,6 +43,8 @@ public class DataPachReadTask implements Runnable{
 	 * 数据转换器
 	 */
 	private IDataParser parser;
+	
+	private IBigMQ bigMQ;
 	
 	
 	/**
@@ -79,8 +85,19 @@ public class DataPachReadTask implements Runnable{
 		
 		
 		//2、发送到消息队列
-        
+		List<MQMsg>  msgList = new ArrayList<>(listPacks.size());
 		
+		for (DataPack pack : listPacks) {
+			MQMsg mqMsg = new MQMsg();
+			mqMsg.setMark(pack.getMark());
+			mqMsg.setData(pack.getDataB64().getBytes());
+			
+		}
+		
+		List<MqSendResult> resultList = bigMQ.post(msgList);
+		
+		
+//		parser.createResponse(requestPack, reason);
 		
 		
 		
@@ -101,6 +118,8 @@ public class DataPachReadTask implements Runnable{
 	 * @return
 	 */
 	private List<MqSendResult> postMQ(List<DataPack> listPacks){
+		
+		
 		return null;
 		
 	}
