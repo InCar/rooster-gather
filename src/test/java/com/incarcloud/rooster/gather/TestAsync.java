@@ -42,7 +42,7 @@ public class TestAsync {
 			threadPool.execute(r);
 
 			System.out.println("KKKKKKKKKKKKKKKKKKKKK");
-			System.in.read();
+//			System.in.read();
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
