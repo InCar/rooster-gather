@@ -16,7 +16,6 @@ import com.incarcloud.rooster.mq.MqSendResult;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
-import io.netty.util.ReferenceCountUtil;
 
 /**
  * 处理读取的数据包的任务
@@ -25,7 +24,7 @@ import io.netty.util.ReferenceCountUtil;
  *
  */
 public class DataPachReadTask implements Runnable {
-	private static Logger s_logger = LoggerFactory.getLogger(GatherChannelHandler.class);
+	private static Logger s_logger = LoggerFactory.getLogger(DataPachReadTask.class);
 
 	/**
 	 * 任务名称（线程的标识）
@@ -90,14 +89,19 @@ public class DataPachReadTask implements Runnable {
 
 	@Override
 	public void run() {
-		// System.out.println(binaryData);
+		s_logger.debug(binaryData.toString());
 		// 1、解析包
 		List<DataPack> listPacks = null;
 		try {
 			listPacks = parser.extract(binaryData);
-			binaryData.discardSomeReadBytes();
+//			binaryData.discardSomeReadBytes();
+			
+			s_logger.debug("-------------parsed--------------");
+			
+			
+			
 
-			if (null == listPacks) {
+			if (null == listPacks || 0 == listPacks.size()) {
 				s_logger.info("no packs!!");
 				return;
 			}
@@ -109,12 +113,16 @@ public class DataPachReadTask implements Runnable {
 				MQMsg mqMsg = new MQMsg();
 				mqMsg.setMark(pack.getMark());
 				mqMsg.setData(pack.getDataB64().getBytes());
+				
+				msgList.add(mqMsg);
 
-				System.out.println(name + "&&&&&&" + mqMsg);
+				s_logger.debug(name + "&&&&&&" + mqMsg);
+				
 			}
 
 			List<MqSendResult> resultList = bigMQ.post(msgList);
 
+			//3.回应设备
 			for (int i = 0; i < resultList.size(); i++) {
 				MqSendResult result = resultList.get(i);
 				if (null == result.getException()) {// 正常返回
@@ -122,7 +130,7 @@ public class DataPachReadTask implements Runnable {
 
 					ByteBuf resp = parser.createResponse(listPacks.get(i), ERespReason.OK);
 					channel.writeAndFlush(resp);
-					ReferenceCountUtil.release(resp);
+					parser.destroyResponse(resp);
 
 				} else {
 
@@ -130,13 +138,13 @@ public class DataPachReadTask implements Runnable {
 
 					ByteBuf resp = parser.createResponse(listPacks.get(i), ERespReason.Failed);
 					channel.writeAndFlush(resp);
-					ReferenceCountUtil.release(resp);
-
+					parser.destroyResponse(resp);
 				}
 			}
 
 		} catch (Exception e) {
-			e.printStackTrace();
+			s_logger.debug(e.getMessage());
+			
 		} finally {
 			// 释放内存
 			if (null != listPacks) {
