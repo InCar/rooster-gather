@@ -88,6 +88,7 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
 	}
 
 	private void OnRead(ChannelHandlerContext ctx, ByteBuf buf) {
+		s_logger.debug("!!!!----"+_parser.getClass());
 
 		Channel channel = ctx.channel();
 		// _threadPool.execute(new DataPachReadTask(channel, buf,_parser));
