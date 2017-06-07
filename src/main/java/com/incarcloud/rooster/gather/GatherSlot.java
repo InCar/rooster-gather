@@ -109,10 +109,10 @@ public abstract class GatherSlot {
 	 *            投递的数据
 	 * @return
 	 */
-	@Deprecated
-	Promise<Object, List<MQException>, Object> postMQ(List<DataPack> listPacks) {
-		return _host.postMQ(listPacks);
-	}
+//	@Deprecated
+//	Promise<Object, List<MQException>, Object> postMQ(List<DataPack> listPacks) {
+//		return _host.postMQ(listPacks);
+//	}
 
 	/**
 	 * 获取 采集主机
