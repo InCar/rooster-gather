@@ -66,4 +66,14 @@ public class DataPackWrap {
 
         return dataParser;
     }
+
+
+    @Override
+    public String toString() {
+        return "DataPackWrap{" +
+                "dataPack=" + dataPack +
+                ", channel=" + channel +
+                ", dataParser=" + dataParser +
+                '}';
+    }
 }

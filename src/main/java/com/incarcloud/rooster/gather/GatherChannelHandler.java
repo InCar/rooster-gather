@@ -75,7 +75,7 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
     }
 
     private void OnRead(ChannelHandlerContext ctx, ByteBuf buf) {
-        s_logger.debug("!!!!----" + _parser.getClass());
+//        s_logger.debug("!!!!----" + _parser.getClass());
 
         Channel channel = ctx.channel();
 
@@ -103,22 +103,7 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
         } catch (Exception e) {
             s_logger.debug(e.getMessage());
 
-        } /*finally {
-            // 释放内存
-            if (null != listPacks || listPacks.size() > 0) {
-                for (DataPack pack : listPacks) {
-
-                    pack.freeBuf();
-                }
-            }
-        }*/
-
-
-
-
-//        Channel channel = ctx.channel();
-//        get_slot().get_host().getMqThreadPool().execute(new DataPachReadTask(get_slot().getName() + "-DataPachReadTask" + Calendar.getInstance().getTimeInMillis(),
-//                channel, buf, _parser, _slot.get_host().getBigMQ()));
+        }
 
     }
 
