@@ -90,7 +90,6 @@ public class GatherHost {
         _workerGroup = new NioEventLoopGroup();
         this.mqThreadPool = Executors.newFixedThreadPool(mqThreadPoolSize);
         this.dataPackQueue = new ArrayBlockingQueue<DataPackWrap>(msgQueueSize);
-
     }
 
 
@@ -109,16 +108,21 @@ public class GatherHost {
         }
 
         //启动处理数据包队列的线程
-
         Executors.newSingleThreadExecutor().execute(new Runnable() {
             @Override
             public void run() {
                 s_logger.debug("check queue");
                 while (true){
-                    if(!dataPackQueue.isEmpty()){
-                        DataPackQueueTask task = new DataPackQueueTask(dataPackQueue,GatherHost.this);
-                        mqThreadPool.execute(task);
+
+                    DataPackQueueTask task = new DataPackQueueTask(dataPackQueue,GatherHost.this);
+                    mqThreadPool.execute(task);
+
+                    try{
+                        Thread.sleep(400);
+                    }catch (InterruptedException e){
+                        s_logger.error("check queue thread is interrupted",e.getMessage());
                     }
+
 
                 }
             }
@@ -222,6 +226,7 @@ public class GatherHost {
         }catch (InterruptedException e){
             //这里一般不会有中断触发这里
             packWrap.getDataPack().freeBuf();
+            s_logger.error("put to msgQueue  interrapted",packWrap,e.getMessage());
         }
 
 
