@@ -80,13 +80,13 @@ public class DataPackQueueTask implements  Runnable{
             MqSendResult sendResult = host.getBigMQ().post(mqMsg);
 
             if (null == sendResult.getException()) {// 正常返回
-                s_logger.info("success send to MQ:" , sendResult.getData());
+                s_logger.info("success send to MQ:" + sendResult.getData());
 
                 ByteBuf resp = packWrap.getDataParser().createResponse(pack, ERespReason.OK);
                  packWrap.getChannel().writeAndFlush(resp);
 
             } else {
-                s_logger.error("failed send to MQ:" , sendResult.getException().getMessage());
+                s_logger.error("failed send to MQ:" + sendResult.getException().getMessage());
 
                 ByteBuf resp = packWrap.getDataParser().createResponse(pack, ERespReason.Failed);
                 packWrap.getChannel().writeAndFlush(resp);
