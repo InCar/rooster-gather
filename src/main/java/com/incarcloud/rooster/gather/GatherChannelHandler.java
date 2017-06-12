@@ -13,6 +13,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 
+import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Iterator;
@@ -51,6 +52,13 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
         ByteBuf buf = (ByteBuf) msg;
+
+        if(buf.readableBytes() > 2 * 1024){ //大于2M 直接丢弃
+            buf.release();
+            return ;
+        }
+
+
         _buffer.writeBytes(buf);
         buf.release();
 
@@ -116,4 +124,17 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
         return _slot;
     }
 
+    /**
+     * 客户端主动断开
+     * @param ctx
+     * @throws Exception
+     */
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+
+        SocketAddress devAddr = ctx.channel().remoteAddress();
+
+        s_logger.info("device "+devAddr+" disconnected");
+        super.channelInactive(ctx);
+    }
 }
