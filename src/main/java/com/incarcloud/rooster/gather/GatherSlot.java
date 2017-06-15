@@ -102,25 +102,12 @@ public abstract class GatherSlot {
 	abstract void stop();
 
 	/**
-	 * 投递数据到MQ
-	 * 
-	 * 
-	 * @param listPacks
-	 *            投递的数据
-	 * @return
+	 * 将数据包处理任务扔到队列中
+	 *
+	 * @param task
 	 */
-//	@Deprecated
-//	Promise<Object, List<MQException>, Object> postMQ(List<DataPack> listPacks) {
-//		return _host.postMQ(listPacks);
-//	}
-
-	/**
-	 * 获取 采集主机
-	 * 
-	 * @return _host
-	 */
-	public GatherHost get_host() {
-		return _host;
+	public void putToCacheQueue(DataPackTask task) {
+		_host.putToCacheQueue(task);
 	}
 
 	/** 

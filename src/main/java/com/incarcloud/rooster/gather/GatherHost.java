@@ -1,6 +1,5 @@
 package com.incarcloud.rooster.gather;
 
-import com.incarcloud.rooster.datapack.DataPack;
 import com.incarcloud.rooster.mq.IBigMQ;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -11,7 +10,6 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 /**
  * 采集槽所在主机
@@ -23,39 +21,32 @@ public class GatherHost {
 
 
     /**
-     * 默认的 处理发送消息任务线程池大小
+     * 默认的 缓存队列大小
      */
-    private static final int DEFULT_MQ_THREADPOOL_SIZE=20;
-    /**
-     * 默认的 缓存接收数据包的队列大小
-     */
-    private static final int DEFULT_DATA_PACK_QUEUE_SIZE=1000;
+    private static final int DEFULT_CACHE_QUEUE_SIZE = 1000;
 
     /**
      * 主机名
      */
     private String name;
 
-
-
     private EventLoopGroup _bossGroup;
     private EventLoopGroup _workerGroup;
-
-    /**
-     * 处理数据推送到mq的线程池
-     */
-    private ExecutorService mqThreadPool;
-
-    /**
-     * 缓存接收数据包的队列
-     */
-    private ArrayBlockingQueue<DataPackWrap> dataPackQueue;
-
 
     /**
      * 采集槽列表
      */
     private ArrayList<GatherSlot> _slots = new ArrayList<>();
+
+    /**
+     * 缓存队列,缓存数据包发送任务
+     */
+    private ArrayBlockingQueue<DataPackTask> cacheQueue;
+
+    /**
+     * 数据包队列的消费者
+     */
+    private DataPackQueueConsumer dataPackQueueConsumer;
 
     /**
      * 操作消息队列接口
@@ -67,29 +58,37 @@ public class GatherHost {
      * 是否已启动
      */
     private Boolean _bRunning = false;
+
     public GatherHost() {
-        this("host"+Calendar.getInstance().getTimeInMillis(),DEFULT_MQ_THREADPOOL_SIZE,DEFULT_DATA_PACK_QUEUE_SIZE);
+        this("host" + Calendar.getInstance().getTimeInMillis());
     }
 
     /**
      * @param name 主机名
      */
     public GatherHost(String name) {
-        this(name,DEFULT_MQ_THREADPOOL_SIZE,DEFULT_DATA_PACK_QUEUE_SIZE);
-    }
-
-    /**
-     * @param name 主机名
-     * @param mqThreadPoolSize 处理发送消息任务线程池大小
-     * @param msgQueueSize  缓存接收数据包的队列大小
-     *
-     */
-    public GatherHost(String name,int mqThreadPoolSize,int msgQueueSize) {
         this.name = name;
         _bossGroup = new NioEventLoopGroup();
         _workerGroup = new NioEventLoopGroup();
-        this.mqThreadPool = Executors.newFixedThreadPool(mqThreadPoolSize);
-        this.dataPackQueue = new ArrayBlockingQueue<DataPackWrap>(msgQueueSize);
+
+        this.cacheQueue = new ArrayBlockingQueue<DataPackTask>(DEFULT_CACHE_QUEUE_SIZE);
+        this.dataPackQueueConsumer = new DataPackQueueConsumer(this, cacheQueue);
+    }
+
+
+    /**
+     * @param name                  主机名
+     * @param cacheQueueSize        缓存队列大小
+     * @param dataPackQueueConsumer 消费者
+     */
+    public GatherHost(String name, int cacheQueueSize, DataPackQueueConsumer dataPackQueueConsumer) {
+        this.name = name;
+        _bossGroup = new NioEventLoopGroup();
+        _workerGroup = new NioEventLoopGroup();
+
+
+        this.cacheQueue = new ArrayBlockingQueue<DataPackTask>(cacheQueueSize);
+        this.dataPackQueueConsumer = dataPackQueueConsumer;
     }
 
 
@@ -107,29 +106,7 @@ public class GatherHost {
             slot.start();
         }
 
-        //启动处理数据包队列的线程
-        Executors.newSingleThreadExecutor().execute(new Runnable() {
-            @Override
-            public void run() {
-                s_logger.debug("check queue");
-                while (true){
-
-                    DataPackQueueTask task = new DataPackQueueTask(dataPackQueue,GatherHost.this);
-                    mqThreadPool.execute(task);
-
-                    try{
-                        Thread.sleep(400);
-                    }catch (InterruptedException e){
-                        s_logger.error("check queue thread is interrupted",e.getMessage());
-                    }
-
-
-                }
-            }
-        });
-
-
-
+        dataPackQueueConsumer.start();
 
         _bRunning = true;
 
@@ -207,26 +184,22 @@ public class GatherHost {
     }
 
 
-    public ExecutorService getMqThreadPool() {
-        return mqThreadPool;
-    }
-
-
     /**
-     * 将数据扔到队列中
-     * @param packWrap
+     * 将数据包处理任务扔到队列中
+     *
+     * @param task
      */
-    public void putToMsgQueue(DataPackWrap packWrap){
-        if(null == packWrap){
+    public void putToCacheQueue(DataPackTask task) {
+        if (null == task) {
             return;
         }
 
-        try{
-            dataPackQueue.put(packWrap);
-        }catch (InterruptedException e){
+        try {
+            cacheQueue.put(task);
+        } catch (InterruptedException e) {
             //这里一般不会有中断触发这里
-            packWrap.getDataPack().freeBuf();
-            s_logger.error("put to msgQueue  interrapted",packWrap,e.getMessage());
+            task.destroy();
+            s_logger.error("put to cacheQueue  interrapted", task, e.getMessage());
         }
 
 
