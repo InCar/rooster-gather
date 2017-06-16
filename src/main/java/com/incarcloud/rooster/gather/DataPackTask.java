@@ -51,8 +51,8 @@ public class DataPackTask {
      * @param iBigMQ 操作消息中间件接口
      */
     public void sendDataPackToMQ(IBigMQ iBigMQ) {
-        if (null == iBigMQ){
-            throw  new IllegalArgumentException("IBigMQ  is null !");
+        if (null == iBigMQ) {
+            throw new IllegalArgumentException("IBigMQ  is null !");
         }
 
         try {
@@ -70,18 +70,24 @@ public class DataPackTask {
                 s_logger.info("success send to MQ:" + sendResult.getData());
 
                 ByteBuf resp = dataParser.createResponse(dataPack, ERespReason.OK);
-                channel.writeAndFlush(resp);
+
+//                System.out.println("success***********" + dataPack + "   " + resp);
+                if (null != resp) {//需要回应设备
+                    channel.writeAndFlush(resp);
+                }
+
 
             } else {
                 s_logger.error("failed send to MQ:" + sendResult.getException().getMessage());
+                ByteBuf resp = dataParser.createResponse(dataPack, ERespReason.ERROR);
 
-                ByteBuf resp = dataParser.createResponse(dataPack, ERespReason.Failed);
-                channel.writeAndFlush(resp);
+                if (null != resp) {//需要回应设备
+                    channel.writeAndFlush(resp);
+                }
             }
 
-
         } catch (Exception e) {
-            s_logger.error(e.getMessage());
+            s_logger.error("sendDataPackToMQ " + e.getMessage());
         } finally {
             if (null != dataPack) {
                 dataPack.freeBuf();
