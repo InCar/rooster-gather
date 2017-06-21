@@ -101,10 +101,10 @@ public abstract class GatherSlot {
 	/**
 	 * 将数据包处理任务扔到队列中
 	 *
-	 * @param task
+	 * @param packWrap
 	 */
-	public void putToCacheQueue(DataPackTask task) {
-		_host.putToCacheQueue(task);
+	public void putToCacheQueue(DataPackWrap packWrap) {
+		_host.putToCacheQueue(packWrap);
 	}
 
 	/** 

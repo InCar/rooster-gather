@@ -95,21 +95,20 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
 
             s_logger.debug("-------------parsed--------------");
 
-
             if (null == listPacks || 0 == listPacks.size()) {
-                s_logger.info("no packs!!");
+                s_logger.debug("no packs!!");
                 return;
             }
 
 
             // 2、扔到host的消息队列
             for (DataPack pack:listPacks) {
-                _slot.putToCacheQueue(new DataPackTask(channel,_parser,pack));
+                _slot.putToCacheQueue(new DataPackWrap(channel,_parser,pack));
                 s_logger.debug("#####putToCacheQueue OK");
             }
 
         } catch (Exception e) {
-            s_logger.debug(e.getMessage());
+            s_logger.error(e.getMessage());
 
         }
 
