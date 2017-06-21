@@ -4,6 +4,8 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * UDP协议的采集处理槽
@@ -12,6 +14,7 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
  *
  */
 class GatherSlot4UDP extends GatherSlot{
+    private static Logger s_logger = LoggerFactory.getLogger(GatherSlot4UDP.class);
     private static final int BACKLOG_COUNT = 1024;
     private int _port;
     private Channel _channel;
@@ -43,6 +46,7 @@ class GatherSlot4UDP extends GatherSlot{
         _bootstrap = null; // 可以释放掉了
         try {
             future.sync();
+            s_logger.info(getName()+" start success listen on port "+_port);
         }
         catch (InterruptedException ex){
             throw new RuntimeException(ex);

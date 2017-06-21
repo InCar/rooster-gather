@@ -67,7 +67,7 @@ public class DataPackTask {
             MqSendResult sendResult = iBigMQ.post(mqMsg);
 
             if (null == sendResult.getException()) {// 正常返回
-                s_logger.info("success send to MQ:" + sendResult.getData());
+                s_logger.debug("success send to MQ:" + sendResult.getData());
 
                 ByteBuf resp = dataParser.createResponse(dataPack, ERespReason.OK);
 

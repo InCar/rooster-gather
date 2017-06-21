@@ -22,9 +22,6 @@ import java.util.List;
  *
  */
 public abstract class GatherSlot {
-	private static Logger s_logger = LoggerFactory.getLogger(GatherSlot.class);
-	
-	
 	/**
 	 * 名称
 	 */
