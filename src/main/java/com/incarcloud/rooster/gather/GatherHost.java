@@ -19,12 +19,6 @@ import java.util.concurrent.ExecutorService;
 public class GatherHost {
     private static Logger s_logger = LoggerFactory.getLogger(GatherHost.class);
 
-
-    /**
-     * 默认的 缓存队列大小
-     */
-    private static final int DEFULT_CACHE_QUEUE_SIZE = 1000;
-
     /**
      * 主机名
      */
@@ -39,14 +33,9 @@ public class GatherHost {
     private ArrayList<GatherSlot> _slots = new ArrayList<>();
 
     /**
-     * 缓存队列,缓存数据包发送任务
+     * 数据包任务的管理和执行器
      */
-    private ArrayBlockingQueue<DataPackTask> cacheQueue;
-
-    /**
-     * 数据包队列的消费者
-     */
-    private DataPackQueueConsumer dataPackQueueConsumer;
+    private DataPackTaskManager dataPackTaskManager;
 
     /**
      * 操作消息队列接口
@@ -71,26 +60,8 @@ public class GatherHost {
         _bossGroup = new NioEventLoopGroup();
         _workerGroup = new NioEventLoopGroup();
 
-        this.cacheQueue = new ArrayBlockingQueue<DataPackTask>(DEFULT_CACHE_QUEUE_SIZE);
-        this.dataPackQueueConsumer = new DataPackQueueConsumer(this, cacheQueue);
+        this.dataPackTaskManager = new DataPackTaskManager(this);
     }
-
-
-    /**
-     * @param name                  主机名
-     * @param cacheQueueSize        缓存队列大小
-     * @param dataPackQueueConsumer 消费者
-     */
-    public GatherHost(String name, int cacheQueueSize, DataPackQueueConsumer dataPackQueueConsumer) {
-        this.name = name;
-        _bossGroup = new NioEventLoopGroup();
-        _workerGroup = new NioEventLoopGroup();
-
-
-        this.cacheQueue = new ArrayBlockingQueue<DataPackTask>(cacheQueueSize);
-        this.dataPackQueueConsumer = dataPackQueueConsumer;
-    }
-
 
     /**
      * 启动
@@ -106,11 +77,11 @@ public class GatherHost {
             slot.start();
         }
 
-        dataPackQueueConsumer.start();
+        dataPackTaskManager.start();
 
         _bRunning = true;
 
-
+        s_logger.info(name + "start success!!");
     }
 
     /**
@@ -194,15 +165,7 @@ public class GatherHost {
             return;
         }
 
-        try {
-            cacheQueue.put(task);
-        } catch (InterruptedException e) {
-            //这里一般不会有中断触发这里
-            task.destroy();
-            s_logger.error("put to cacheQueue  interrapted", task, e.getMessage());
-        }
-
-
+        dataPackTaskManager.add(task);
     }
 
 
