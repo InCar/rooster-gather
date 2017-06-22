@@ -11,7 +11,7 @@ import org.junit.Test;
 
 public class TestAsync {
 
-	@Test
+//	@Test
 	public void testThreadPool() {
 
 		try {

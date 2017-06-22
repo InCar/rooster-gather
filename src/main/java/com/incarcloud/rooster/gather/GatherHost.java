@@ -33,9 +33,9 @@ public class GatherHost {
     private ArrayList<GatherSlot> _slots = new ArrayList<>();
 
     /**
-     * 数据包任务的管理和执行器
+     * 数据包发送管理器
      */
-    private DataPackTaskManager dataPackTaskManager;
+    private DataPackPostManager dataPackPostManager;
 
     /**
      * 操作消息队列接口
@@ -60,7 +60,7 @@ public class GatherHost {
         _bossGroup = new NioEventLoopGroup();
         _workerGroup = new NioEventLoopGroup();
 
-        this.dataPackTaskManager = new DataPackTaskManager(this);
+        this.dataPackPostManager = new DataPackPostManager(this);
     }
 
     /**
@@ -77,7 +77,7 @@ public class GatherHost {
             slot.start();
         }
 
-        dataPackTaskManager.start();
+        dataPackPostManager.start();
 
         _bRunning = true;
 
@@ -158,14 +158,14 @@ public class GatherHost {
     /**
      * 将数据包处理任务扔到队列中
      *
-     * @param task
+     * @param packWrap
      */
-    public void putToCacheQueue(DataPackTask task) {
-        if (null == task) {
+    public void putToCacheQueue(DataPackWrap packWrap) {
+        if (null == packWrap) {
             return;
         }
 
-        dataPackTaskManager.add(task);
+        dataPackPostManager.add(packWrap);
     }
 
 
