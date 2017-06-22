@@ -66,7 +66,7 @@ public class DataPackPostManager {
     /**
      * 默认的 缓存队列大小
      */
-    private static final int DEFULT_CACHE_QUEUE_SIZE = 1000;
+    private static final int DEFULT_CACHE_QUEUE_SIZE = 10000;
     /**
      * 默认线程数
      */
