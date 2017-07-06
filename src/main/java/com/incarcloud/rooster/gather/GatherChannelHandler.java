@@ -114,6 +114,14 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
 
     }
 
+    @Override
+    public void channelActive(ChannelHandlerContext ctx) throws Exception {
+        SocketAddress devAddr = ctx.channel().remoteAddress();
+
+        s_logger.info("device "+devAddr+" connected");
+        super.channelActive(ctx);
+    }
+
     /**
      * 客户端主动断开
      * @param ctx

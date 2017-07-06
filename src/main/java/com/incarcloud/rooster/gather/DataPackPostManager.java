@@ -6,11 +6,13 @@ import com.incarcloud.rooster.datapack.IDataParser;
 import com.incarcloud.rooster.mq.IBigMQ;
 import com.incarcloud.rooster.mq.MQMsg;
 import com.incarcloud.rooster.mq.MqSendResult;
+import com.incarcloud.rooster.util.DataTool;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.*;
@@ -226,8 +228,6 @@ public class DataPackPostManager {
                 }
 
             }
-
-
         }
 
 
@@ -243,11 +243,15 @@ public class DataPackPostManager {
 
             List<MQMsg> msgList = new ArrayList<>(packWrapBatch.size());
             for (DataPackWrap packWrap : packWrapBatch) {
-                MQMsg mqMsg = new MQMsg();
-                mqMsg.setMark(packWrap.getDataPack().getMark());
-                mqMsg.setData(packWrap.getDataPack().getDataB64().getBytes());
+                try {
+                    DataPack dp = packWrap.getDataPack();
+                    //System.out.println("****"+ DataTool.bytes2hex(dp.getDataBytes()));
+                    MQMsg mqMsg = new MQMsg(dp.getMark(), dp.serializeToBytes());
 
-                msgList.add(mqMsg);
+                    msgList.add(mqMsg);
+                } catch (UnsupportedEncodingException e) {
+                    s_logger.error("plant unsupport  UTF-8," + packWrap.getDataPack());
+                }
             }
 
 
@@ -304,10 +308,8 @@ public class DataPackPostManager {
 
 
             try {
-                //
-                MQMsg mqMsg = new MQMsg();
-                mqMsg.setMark(dataPack.getMark());
-                mqMsg.setData(dataPack.getDataB64().getBytes());
+                DataPack dp = packWrap.getDataPack();
+                MQMsg mqMsg = new MQMsg(dp.getMark(), dp.serializeToBytes());
                 s_logger.debug("&&&&&&" + mqMsg);
 
 
