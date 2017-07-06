@@ -104,7 +104,7 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
             // 2、扔到host的消息队列
             for (DataPack pack:listPacks) {
                 _slot.putToCacheQueue(new DataPackWrap(channel,_parser,pack));
-                s_logger.debug("#####putToCacheQueue OK");
+//                s_logger.debug("#####putToCacheQueue OK");
             }
 
         } catch (Exception e) {
@@ -112,6 +112,14 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
 
         }
 
+    }
+
+    @Override
+    public void channelActive(ChannelHandlerContext ctx) throws Exception {
+        SocketAddress devAddr = ctx.channel().remoteAddress();
+
+        s_logger.info("device "+devAddr+" connected");
+        super.channelActive(ctx);
     }
 
     /**
