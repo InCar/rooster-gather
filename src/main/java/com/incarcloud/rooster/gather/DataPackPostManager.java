@@ -168,6 +168,13 @@ public class DataPackPostManager {
     }
 
 
+    public void stop(){
+
+        scheduledExecutorService.shutdownNow();
+
+    }
+
+
     /**
      * @author Fan Beibei
      * @Description: 取 发送任务 并执行的线程
@@ -243,8 +250,9 @@ public class DataPackPostManager {
 
             List<MQMsg> msgList = new ArrayList<>(packWrapBatch.size());
             for (DataPackWrap packWrap : packWrapBatch) {
+                DataPack dp = packWrap.getDataPack();
                 try {
-                    DataPack dp = packWrap.getDataPack();
+
                     //System.out.println("****"+ DataTool.bytes2hex(dp.getDataBytes()));
                     MQMsg mqMsg = new MQMsg(dp.getMark(), dp.serializeToBytes());
 
@@ -252,6 +260,8 @@ public class DataPackPostManager {
                     s_logger.debug("DataPack:"+dp.toString());
                 } catch (UnsupportedEncodingException e) {
                     s_logger.error("plant unsupport  UTF-8," + packWrap.getDataPack());
+                }finally {
+                    dp.freeBuf();
                 }
             }
 
