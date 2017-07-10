@@ -260,8 +260,6 @@ public class DataPackPostManager {
                     s_logger.debug("DataPack:"+dp.toString());
                 } catch (UnsupportedEncodingException e) {
                     s_logger.error("plant unsupport  UTF-8," + packWrap.getDataPack());
-                }finally {
-                    dp.freeBuf();
                 }
             }
 
@@ -269,8 +267,8 @@ public class DataPackPostManager {
             List<MqSendResult> resultList = iBigMQ.post(msgList);
 
 
+            //回应设备
             for (int i = 0; i < resultList.size(); i++) {
-
                 MqSendResult sendResult = resultList.get(i);
                 IDataParser dataParser = packWrapBatch.get(i).getDataParser();
                 DataPack dataPack = packWrapBatch.get(i).getDataPack();
@@ -299,6 +297,11 @@ public class DataPackPostManager {
                 } catch (Exception e) {
                     s_logger.error("sendDataPackToMQ " + e.getMessage());
                 }
+            }
+
+            //释放datapack
+            for (DataPackWrap packWrap : packWrapBatch) {
+                packWrap.getDataPack().freeBuf();
             }
 
         }
