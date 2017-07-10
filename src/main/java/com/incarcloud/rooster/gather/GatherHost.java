@@ -97,6 +97,11 @@ public class GatherHost {
             slot.stop();
         }
 
+        dataPackPostManager.stop();
+        if(null != bigMQ){
+            bigMQ.close();
+        }
+
         _bRunning = false;
     }
 

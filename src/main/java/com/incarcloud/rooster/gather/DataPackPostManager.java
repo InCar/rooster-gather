@@ -168,6 +168,13 @@ public class DataPackPostManager {
     }
 
 
+    public void stop(){
+
+        scheduledExecutorService.shutdownNow();
+
+    }
+
+
     /**
      * @author Fan Beibei
      * @Description: 取 发送任务 并执行的线程
