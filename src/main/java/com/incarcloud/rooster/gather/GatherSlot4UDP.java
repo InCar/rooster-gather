@@ -38,7 +38,7 @@ class GatherSlot4UDP extends GatherSlot{
     }
 
     @Override
-    void start(){
+    protected void start0(){
         ChannelFuture future = _bootstrap.bind(_port);
         _channel = future.channel();
         
@@ -54,7 +54,7 @@ class GatherSlot4UDP extends GatherSlot{
     }
 
     @Override
-    void stop(){
+    public void stop(){
         try {
             _channel.closeFuture().sync();
         }

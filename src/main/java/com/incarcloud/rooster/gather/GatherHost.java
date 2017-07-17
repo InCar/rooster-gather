@@ -1,6 +1,7 @@
 package com.incarcloud.rooster.gather;
 
 import com.incarcloud.rooster.mq.IBigMQ;
+import com.incarcloud.rooster.util.StringUtil;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import org.slf4j.Logger;
@@ -8,6 +9,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
 
@@ -72,6 +74,11 @@ public class GatherHost {
         if (_bRunning)
             return;
 
+        if (null == _slots || 0 == _slots.size()) {
+            throw new RuntimeException("no slot!!");
+        }
+
+
         //启动所有采集槽
         for (GatherSlot slot : _slots) {
             slot.start();
@@ -98,7 +105,7 @@ public class GatherHost {
         }
 
         dataPackPostManager.stop();
-        if(null != bigMQ){
+        if (null != bigMQ) {
             bigMQ.close();
         }
 
@@ -112,6 +119,7 @@ public class GatherHost {
      * @param portArgs 端口参数
      * @return
      */
+    @Deprecated
     public GatherSlot addSlot(GatherPortType portType, String portArgs) {
         GatherSlot slot = null;
 
@@ -130,6 +138,46 @@ public class GatherHost {
         _slots.add(slot);
         return slot;
     }
+
+
+    /**
+     * 添加采集槽
+     * @param slotsConf 采集槽配置,格式:   解析器名:通讯协议:监听端口,解析器名:通讯协议:监听端口,......,解析器名:通讯协议:监听端口
+     */
+    public void addSlot(String slotsConf) throws Exception{
+        if(StringUtil.isBlank(slotsConf)){
+            throw new IllegalArgumentException();
+        }
+
+        String[] cfgs = slotsConf.split(",");
+
+        for (String s : cfgs) {
+            String parse = s.split(":")[0].trim();
+            String protocol = s.split(":")[1].trim();
+            String port = s.split(":")[2].trim();
+
+            if("tcp".equals(protocol)){
+                GatherSlot slot = new GatherSlot4TCP(Integer.parseInt(port),this);
+                slot.setDataParser(parse);
+                _slots.add(slot);
+            }
+
+            if("udp".equals(protocol)){
+                GatherSlot slot = new GatherSlot4UDP(Integer.parseInt(port),this);
+                slot.setDataParser(parse);
+                _slots.add(slot);
+            }
+
+            if("mqtt".equals(protocol)){//TODO
+            }
+
+
+        }
+
+
+    }
+
+
 
 
     EventLoopGroup getBossGroup() {
