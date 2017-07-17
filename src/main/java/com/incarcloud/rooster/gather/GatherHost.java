@@ -1,5 +1,6 @@
 package com.incarcloud.rooster.gather;
 
+import com.incarcloud.rooster.gather.cmd.server.CommandServer;
 import com.incarcloud.rooster.mq.IBigMQ;
 import com.incarcloud.rooster.util.StringUtil;
 import io.netty.channel.EventLoopGroup;
@@ -39,6 +40,8 @@ public class GatherHost {
      */
     private DataPackPostManager dataPackPostManager;
 
+    private CommandServer cmdServer;
+
     /**
      * 操作消息队列接口
      */
@@ -70,7 +73,7 @@ public class GatherHost {
      *
      * @throws Exception
      */
-    public void start() throws Exception {
+    public synchronized void start() throws Exception {
         if (_bRunning)
             return;
 
@@ -84,7 +87,13 @@ public class GatherHost {
             slot.start();
         }
 
+
         dataPackPostManager.start();
+
+
+        if(null != cmdServer){
+            cmdServer.start();
+        }
 
         _bRunning = true;
 
@@ -96,7 +105,7 @@ public class GatherHost {
      *
      * @throws Exception
      */
-    public void stop() throws Exception {
+    public synchronized void stop() throws Exception {
         _bossGroup.shutdownGracefully();
         _workerGroup.shutdownGracefully();
 
@@ -109,6 +118,9 @@ public class GatherHost {
             bigMQ.close();
         }
 
+        if(null != cmdServer){
+            cmdServer.stop();
+        }
         _bRunning = false;
     }
 
@@ -175,6 +187,11 @@ public class GatherHost {
         }
 
 
+    }
+
+
+    public void addCommandServer(CommandServer cmdServer){
+        this.cmdServer = cmdServer;
     }
 
 

@@ -1,15 +1,8 @@
 package com.incarcloud.rooster.gather;
 
-import com.incarcloud.rooster.datapack.DataPack;
 import com.incarcloud.rooster.datapack.IDataParser;
-import com.incarcloud.rooster.mq.MQException;
-import org.jdeferred.Promise;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.InvalidClassException;
 import java.util.Date;
-import java.util.List;
 
 /**
  * <p>
