@@ -68,4 +68,14 @@ class GatherSlot4TCP extends GatherSlot {
             throw new RuntimeException(ex);
         }
     }
+
+    @Override
+    public String getTransportProtocal() {
+        return "tcp";
+    }
+
+    @Override
+    public int getListenPort(){
+        return _port;
+    }
 }

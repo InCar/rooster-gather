@@ -1,5 +1,9 @@
 package com.incarcloud.rooster.gather;
 
+import com.incarcloud.rooster.gather.cmd.DeviceConnectionCache;
+import com.incarcloud.rooster.gather.cmd.device.DeviceConnection;
+import com.incarcloud.rooster.gather.cmd.device.DeviceConnectionContainer;
+import com.incarcloud.rooster.gather.cmd.device.DeviceConnectionRemoteRegister;
 import com.incarcloud.rooster.gather.cmd.server.CommandServer;
 import com.incarcloud.rooster.mq.IBigMQ;
 import com.incarcloud.rooster.util.StringUtil;
@@ -10,9 +14,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.List;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ExecutorService;
 
 /**
  * 采集槽所在主机
@@ -34,18 +35,36 @@ public class GatherHost {
      * 采集槽列表
      */
     private ArrayList<GatherSlot> _slots = new ArrayList<>();
-
     /**
      * 数据包发送管理器
      */
     private DataPackPostManager dataPackPostManager;
 
-    private CommandServer cmdServer;
+
 
     /**
      * 操作消息队列接口
      */
     private IBigMQ bigMQ;
+
+
+
+    /**
+     * 远程命令监听服务
+     */
+    private CommandServer cmdServer;
+
+    /**
+     * 向远程注册已连接设备
+     */
+    private DeviceConnectionRemoteRegister remoteRegister;
+    /**
+
+     * 设备连接容器，缓存本host上所有的连接设备
+     */
+    private DeviceConnectionContainer container = new DeviceConnectionCache();
+
+
 
 
     /**
@@ -239,4 +258,21 @@ public class GatherHost {
     }
 
 
+
+    public DeviceConnectionContainer getContainer() {
+        return container;
+    }
+
+    public void setRemoteRegister(DeviceConnectionRemoteRegister remoteRegister) {
+        this.remoteRegister = remoteRegister;
+    }
+
+    /**
+     * 注册连接的设备
+     * @param conn
+     * @param serverUrl
+     */
+    public void registerConnection(DeviceConnection conn,String serverUrl){
+        remoteRegister.registerConnection(conn.getVin(),conn.getProtocal(),serverUrl);
+    }
 }

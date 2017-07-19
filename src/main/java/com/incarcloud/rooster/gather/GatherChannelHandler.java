@@ -1,9 +1,8 @@
 package com.incarcloud.rooster.gather;
 
 import com.incarcloud.rooster.datapack.DataPack;
-import com.incarcloud.rooster.datapack.ERespReason;
-import com.incarcloud.rooster.mq.MQMsg;
-import com.incarcloud.rooster.mq.MqSendResult;
+import com.incarcloud.rooster.gather.cmd.device.DeviceConnection;
+import com.incarcloud.rooster.util.StringUtil;
 import org.slf4j.LoggerFactory;
 
 import com.incarcloud.rooster.datapack.IDataParser;
@@ -14,9 +13,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 
 import java.net.SocketAddress;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -27,6 +23,8 @@ import java.util.List;
 public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
     private static org.slf4j.Logger s_logger = LoggerFactory.getLogger(GatherChannelHandler.class);
 
+
+    private String vin;
 
     /**
      * 所属的采集槽
@@ -53,9 +51,9 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
         ByteBuf buf = (ByteBuf) msg;
 
-        if(buf.readableBytes() > 2 * 1024 *1024){ //大于2M 直接丢弃
+        if (buf.readableBytes() > 2 * 1024 * 1024) { //大于2M 直接丢弃
             buf.release();
-            return ;
+            return;
         }
 
 
@@ -86,30 +84,31 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
 //        s_logger.debug("!!!!----" + _parser.getClass());
 
         Channel channel = ctx.channel();
-
-
         List<DataPack> listPacks = null;
         try {
             // 1、解析包
             listPacks = _parser.extract(buf);
-
-            s_logger.debug("-------------parsed--------------");
 
             if (null == listPacks || 0 == listPacks.size()) {
                 s_logger.debug("no packs!!");
                 return;
             }
 
+            //注册设备会话
+            if (null == vin) {//已注册就不用再次注册
+                String v = getVin(buf,_parser);
+                registerConnection(v, ctx.channel(), listPacks.get(0).getMark());//TODO
+            }
+
 
             // 2、扔到host的消息队列
-            for (DataPack pack:listPacks) {
-                _slot.putToCacheQueue(new DataPackWrap(channel,_parser,pack));
+            for (DataPack pack : listPacks) {
+                _slot.putToCacheQueue(new DataPackWrap(channel, _parser, pack));
 //                s_logger.debug("#####putToCacheQueue OK");
             }
 
         } catch (Exception e) {
             s_logger.error(e.getMessage());
-
         }
 
     }
@@ -118,12 +117,13 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         SocketAddress devAddr = ctx.channel().remoteAddress();
 
-        s_logger.info("device "+devAddr+" connected");
+        s_logger.info("device " + devAddr + " connected");
         super.channelActive(ctx);
     }
 
     /**
      * 客户端主动断开
+     *
      * @param ctx
      * @throws Exception
      */
@@ -131,8 +131,56 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
 
         SocketAddress devAddr = ctx.channel().remoteAddress();
+        s_logger.info("device " + devAddr + " disconnected");
 
-        s_logger.info("device "+devAddr+" disconnected");
-        super.channelInactive(ctx);
+        if (null != vin) {//释放掉缓存的连接
+            _slot.getDeviceConnectionContainer().removeDeviceConnection(vin);
+        }
+    }
+
+
+    /**
+     * 注册设备连接
+     *
+     * @param vin
+     * @param channel
+     * @param protocol
+     */
+    private void registerConnection(String vin, Channel channel, String protocol) {
+
+        if (StringUtil.isBlank(vin)) {
+            return;
+        }
+
+        //1.缓存连接
+        DeviceConnection conn = new DeviceConnection(vin, channel, protocol);
+        _slot.getDeviceConnectionContainer().addDeviceConnection(conn);
+
+
+        //2.远程注册,开线程避免阻塞
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    _slot.registerConnection(conn);
+                    GatherChannelHandler.this.vin = vin;
+                }catch (Exception e){
+                    e.printStackTrace();
+                    s_logger.error(e.getMessage());
+                }
+            }
+        }).start();
+
+    }
+
+
+    /**
+     * 获取vin码
+     * @param buf
+     * @param _parser
+     * @return
+     */
+    private String getVin(ByteBuf buf,IDataParser _parser){
+        return "123456789";
     }
 }

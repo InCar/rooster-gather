@@ -1,7 +1,12 @@
 package com.incarcloud.rooster.gather;
 
 import com.incarcloud.rooster.datapack.IDataParser;
+import com.incarcloud.rooster.gather.cmd.device.DeviceConnection;
+import com.incarcloud.rooster.gather.cmd.device.DeviceConnectionContainer;
+
 import java.io.InvalidClassException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.Date;
 
 /**
@@ -25,7 +30,7 @@ public abstract class GatherSlot {
 	 */
 	private GatherHost _host;
 	/**
-	 * 
+	 * 数据包解析器
 	 */
 	private IDataParser _dataParser;
 
@@ -104,6 +109,29 @@ public abstract class GatherSlot {
     public abstract void stop();
 
 	/**
+	 * 获取传输协议
+	 *
+	 * @return  tcp/udp/mqtt
+	 */
+	public abstract String getTransportProtocal();
+
+	/**
+	 * 获取监听端口
+	 * @return
+	 */
+	public abstract int getListenPort();
+
+	/**
+	 * 获取连接设备使用的标准协议
+	 *
+	 * @return
+	 */
+	/*public String getDeviceProtocal(){
+
+	}*/
+
+
+	/**
 	 * 将数据包处理任务扔到队列中
 	 *
 	 * @param packWrap
@@ -119,6 +147,25 @@ public abstract class GatherSlot {
 	public String getName() {
 		return name;
 	}
-	
 
+
+	/**
+	 * 获取设备连接容器
+	 *
+	 * @return
+	 */
+	public DeviceConnectionContainer getDeviceConnectionContainer(){
+		return  _host.getContainer();
+	}
+
+	/**
+	 * 注册连接的设备
+	 * @param conn
+	 */
+	public void registerConnection(DeviceConnection conn) throws UnknownHostException{
+		String localIp = InetAddress.getLocalHost().getHostAddress();
+		String serverUrl = getTransportProtocal()+":"+ localIp+":"+getListenPort();
+
+		_host.registerConnection(conn,serverUrl);
+	}
 }

@@ -62,4 +62,14 @@ class GatherSlot4UDP extends GatherSlot{
             throw new RuntimeException(ex);
         }
     }
+
+    @Override
+    public String getTransportProtocal() {
+        return "udp";
+    }
+
+    @Override
+    public int getListenPort(){
+        return _port;
+    }
 }

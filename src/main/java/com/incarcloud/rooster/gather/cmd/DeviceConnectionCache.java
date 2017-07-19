@@ -2,6 +2,9 @@ package com.incarcloud.rooster.gather.cmd;/**
  * Created by fanbeibei on 2017/7/17.
  */
 
+import com.incarcloud.rooster.gather.cmd.device.DeviceConnection;
+import com.incarcloud.rooster.gather.cmd.device.DeviceConnectionContainer;
+
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -14,10 +17,9 @@ public class DeviceConnectionCache implements DeviceConnectionContainer{
     /**
      * vin -> DeviceConnection
      */
-    private ConcurrentHashMap<String,DeviceConnection> connMap = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<String,DeviceConnection> connMap = new ConcurrentHashMap<>(1000);
 
     public  DeviceConnectionCache(){
-
     }
 
     /**
@@ -26,7 +28,7 @@ public class DeviceConnectionCache implements DeviceConnectionContainer{
      * @param conn
      * @return
      */
-    public void addDeviceConnection(DeviceConnection conn) throws Exception{
+    public void addDeviceConnection(DeviceConnection conn) {
         if(null == conn){
             throw new IllegalArgumentException();
         }
@@ -41,7 +43,7 @@ public class DeviceConnectionCache implements DeviceConnectionContainer{
      *            车辆vin码
      * @return
      */
-    public void removeDeviceConnection(String vin) throws Exception{
+    public void removeDeviceConnection(String vin) {
         connMap.remove(vin);
     }
 
@@ -53,7 +55,18 @@ public class DeviceConnectionCache implements DeviceConnectionContainer{
      * @return
      * @throws Exception
      */
-    public DeviceConnection getDeviceConnection(String vin) throws Exception{
+    public DeviceConnection getDeviceConnection(String vin){
         return connMap.get(vin);
     }
+
+
+    /**
+     * 清理不活动的连接的任务
+     */
+    /*private class CleanInActiveDeviceConnectionTask implements Runnable{
+        @Override
+        public void run() {
+
+        }
+    }*/
 }
