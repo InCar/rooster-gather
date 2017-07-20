@@ -5,7 +5,6 @@ import com.incarcloud.rooster.gather.cmd.device.DeviceConnection;
 import com.incarcloud.rooster.gather.cmd.device.DeviceConnectionContainer;
 
 import java.io.InvalidClassException;
-import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Date;
 
@@ -163,9 +162,6 @@ public abstract class GatherSlot {
 	 * @param conn
 	 */
 	public void registerConnection(DeviceConnection conn) throws UnknownHostException{
-		String localIp = InetAddress.getLocalHost().getHostAddress();
-		String serverUrl = getTransportProtocal()+":"+ localIp+":"+getListenPort();
-
-		_host.registerConnection(conn,serverUrl);
+		_host.registerConnection(conn);
 	}
 }

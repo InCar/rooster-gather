@@ -12,6 +12,8 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Calendar;
 
@@ -270,9 +272,10 @@ public class GatherHost {
     /**
      * 注册连接的设备
      * @param conn
-     * @param serverUrl
      */
-    public void registerConnection(DeviceConnection conn,String serverUrl){
-        remoteRegister.registerConnection(conn.getVin(),conn.getProtocal(),serverUrl);
+    public void registerConnection(DeviceConnection conn)throws UnknownHostException {
+
+        String cmdServerUrl = cmdServer.getUrl();
+        remoteRegister.registerConnection(conn.getVin(),conn.getProtocal(),cmdServerUrl);
     }
 }
