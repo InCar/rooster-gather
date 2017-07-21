@@ -56,7 +56,7 @@ public class NettyRestfulCommandServer extends  AbstractRestfulCommandServer{
                     ChannelPipeline p = ch.pipeline();
                     p.addLast(new HttpServerCodec());/*HTTP 服务的解码器*/
                     p.addLast(new HttpObjectAggregator(2048));/*HTTP 消息的合并处理*/
-                    p.addLast(new HttpRestfulHandler(new CommandService())); /*自己写的服务器逻辑处理*/
+                    p.addLast(new HttpRestfulHandler(new CommandService(host.getContainer()))); /*自己写的服务器逻辑处理*/
                 }
             });
 

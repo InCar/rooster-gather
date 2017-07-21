@@ -66,9 +66,6 @@ public class GatherHost {
      */
     private DeviceConnectionContainer container = new DeviceConnectionCache();
 
-
-
-
     /**
      * 是否已启动
      */
@@ -260,7 +257,10 @@ public class GatherHost {
     }
 
 
-
+    /**
+     * 获取缓存设备连接的容器
+     * @return
+     */
     public DeviceConnectionContainer getContainer() {
         return container;
     }
@@ -277,5 +277,14 @@ public class GatherHost {
 
         String cmdServerUrl = cmdServer.getUrl();
         remoteRegister.registerConnection(conn.getVin(),cmdServerUrl);
+    }
+
+
+    /**
+     * 从远程移除设备连接信息
+     * @param vin
+     */
+    public void removeConnectionFromRemote(String vin){
+        remoteRegister.removeConnection(vin);
     }
 }

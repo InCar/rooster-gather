@@ -89,9 +89,9 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
         try {
 
             //注册设备会话
+            String v=null;//TODO 这里和下面待修改
             if (null == vin) {//已注册就不用再次注册
-                String v = getVin(buf,_parser);
-                registerConnection(v, ctx.channel());//TODO
+                v = getVin(buf,_parser);
             }
 
             // 1、解析包
@@ -100,6 +100,11 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
             if (null == listPacks || 0 == listPacks.size()) {
                 s_logger.debug("no packs!!");
                 return;
+            }
+
+            //TODO
+            if (null == vin) {//已注册就不用再次注册
+                registerConnection(v, ctx.channel(),listPacks.get(0).getProtocol());//TODO
             }
 
 
@@ -140,6 +145,8 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
 
         if (null != vin) {//释放掉缓存的连接
             _slot.getDeviceConnectionContainer().removeDeviceConnection(vin);
+            _slot.removeConnectionFromRemote(vin);
+            s_logger.debug("success remove device connection from remote,vin="+vin);
         }
     }
 
@@ -149,15 +156,16 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
      *
      * @param vin
      * @param channel
+     * @param  protocol
      */
-    private void registerConnection(String vin, Channel channel) {
+    private void registerConnection(String vin, Channel channel,String protocol) {
 
         if (StringUtil.isBlank(vin)) {
             return;
         }
 
         //1.缓存连接
-        DeviceConnection conn = new DeviceConnection(vin, channel);
+        DeviceConnection conn = new DeviceConnection(vin, channel,protocol);
         _slot.getDeviceConnectionContainer().addDeviceConnection(conn);
 
 
@@ -168,6 +176,7 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
                 try {
                     _slot.registerConnectionToRemote(conn);
                     GatherChannelHandler.this.vin = vin;
+                    s_logger.debug("success register device connection to remote,vin="+vin);
                 }catch (Exception e){
                     e.printStackTrace();
                     s_logger.error(e.getMessage());

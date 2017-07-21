@@ -158,10 +158,18 @@ public abstract class GatherSlot {
 	}
 
 	/**
-	 * 注册连接的设备
+	 * 注册连接的设备信息到远程
 	 * @param conn
 	 */
 	public void registerConnectionToRemote(DeviceConnection conn) throws UnknownHostException{
 		_host.registerConnectionToRemote(conn);
+	}
+
+	/**
+	 * 从远程移除设备连接信息
+	 * @param vin
+	 */
+	public void removeConnectionFromRemote(String vin){
+		_host.removeConnectionFromRemote(vin);
 	}
 }
