@@ -74,6 +74,7 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
         _buffer = null;
     }
 
+
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         s_logger.error("{}", cause.toString());
@@ -86,6 +87,13 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
         Channel channel = ctx.channel();
         List<DataPack> listPacks = null;
         try {
+
+            //注册设备会话
+            if (null == vin) {//已注册就不用再次注册
+                String v = getVin(buf,_parser);
+                registerConnection(v, ctx.channel());//TODO
+            }
+
             // 1、解析包
             listPacks = _parser.extract(buf);
 
@@ -94,11 +102,7 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
                 return;
             }
 
-            //注册设备会话
-            if (null == vin) {//已注册就不用再次注册
-                String v = getVin(buf,_parser);
-                registerConnection(v, ctx.channel(), listPacks.get(0).getMark());//TODO
-            }
+
 
 
             // 2、扔到host的消息队列
@@ -108,6 +112,7 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
             }
 
         } catch (Exception e) {
+            e.printStackTrace();
             s_logger.error(e.getMessage());
         }
 
@@ -144,16 +149,15 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
      *
      * @param vin
      * @param channel
-     * @param protocol
      */
-    private void registerConnection(String vin, Channel channel, String protocol) {
+    private void registerConnection(String vin, Channel channel) {
 
         if (StringUtil.isBlank(vin)) {
             return;
         }
 
         //1.缓存连接
-        DeviceConnection conn = new DeviceConnection(vin, channel, protocol);
+        DeviceConnection conn = new DeviceConnection(vin, channel);
         _slot.getDeviceConnectionContainer().addDeviceConnection(conn);
 
 
@@ -162,7 +166,7 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
             @Override
             public void run() {
                 try {
-                    _slot.registerConnection(conn);
+                    _slot.registerConnectionToRemote(conn);
                     GatherChannelHandler.this.vin = vin;
                 }catch (Exception e){
                     e.printStackTrace();

@@ -3,6 +3,7 @@ package com.incarcloud.rooster.gather.cmd.server;/**
  */
 
 import com.google.gson.Gson;
+import com.incarcloud.rooster.gather.cmd.CommandServerRespCode;
 import com.incarcloud.rooster.gather.cmd.ReqContent;
 import com.incarcloud.rooster.gather.cmd.RespContent;
 import com.incarcloud.rooster.util.StringUtil;

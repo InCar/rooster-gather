@@ -273,9 +273,9 @@ public class GatherHost {
      * 注册连接的设备
      * @param conn
      */
-    public void registerConnection(DeviceConnection conn)throws UnknownHostException {
+    public void registerConnectionToRemote(DeviceConnection conn)throws UnknownHostException {
 
         String cmdServerUrl = cmdServer.getUrl();
-        remoteRegister.registerConnection(conn.getVin(),conn.getProtocal(),cmdServerUrl);
+        remoteRegister.registerConnection(conn.getVin(),cmdServerUrl);
     }
 }

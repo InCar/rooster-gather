@@ -15,6 +15,8 @@ import io.netty.handler.logging.LoggingHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.UnknownHostException;
+
 /**
  * @author Fan Beibei
  * @Description: netty实现的http restful服务端
@@ -32,6 +34,12 @@ public class NettyRestfulCommandServer extends  AbstractRestfulCommandServer{
     public NettyRestfulCommandServer(GatherHost host,int port){
         super(port);
         this.host = host;
+    }
+
+
+    @Override
+    public String getUrl() throws UnknownHostException {
+        return super.getUrl()+"/rest";
     }
 
     @Override

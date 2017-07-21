@@ -2,6 +2,7 @@ package com.incarcloud.rooster.gather.cmd.server;/**
  * Created by fanbeibei on 2017/7/17.
  */
 
+import com.incarcloud.rooster.gather.cmd.CommandServerRespCode;
 import com.incarcloud.rooster.gather.cmd.ReqContent;
 import com.incarcloud.rooster.gather.cmd.RespContent;
 import org.slf4j.Logger;

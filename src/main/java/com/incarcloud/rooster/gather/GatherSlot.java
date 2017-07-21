@@ -161,7 +161,7 @@ public abstract class GatherSlot {
 	 * 注册连接的设备
 	 * @param conn
 	 */
-	public void registerConnection(DeviceConnection conn) throws UnknownHostException{
-		_host.registerConnection(conn);
+	public void registerConnectionToRemote(DeviceConnection conn) throws UnknownHostException{
+		_host.registerConnectionToRemote(conn);
 	}
 }
