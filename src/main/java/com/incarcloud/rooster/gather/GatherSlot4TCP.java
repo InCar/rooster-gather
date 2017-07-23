@@ -45,7 +45,7 @@ class GatherSlot4TCP extends GatherSlot {
     }
 
     @Override
-    void start(){
+    protected void start0(){
         ChannelFuture future = _bootstrap.bind(_port);
         _channel = future.channel();
         _bootstrap = null; // 可以释放掉了
@@ -60,12 +60,22 @@ class GatherSlot4TCP extends GatherSlot {
     }
 
     @Override
-    void stop(){
+    public void stop(){
         try {
             _channel.closeFuture().sync();
         }
         catch (InterruptedException ex){
             throw new RuntimeException(ex);
         }
+    }
+
+    @Override
+    public String getTransportProtocal() {
+        return "tcp";
+    }
+
+    @Override
+    public int getListenPort(){
+        return _port;
     }
 }

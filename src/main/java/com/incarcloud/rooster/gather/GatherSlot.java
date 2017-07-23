@@ -1,15 +1,12 @@
 package com.incarcloud.rooster.gather;
 
-import com.incarcloud.rooster.datapack.DataPack;
 import com.incarcloud.rooster.datapack.IDataParser;
-import com.incarcloud.rooster.mq.MQException;
-import org.jdeferred.Promise;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.incarcloud.rooster.gather.cmd.device.DeviceConnection;
+import com.incarcloud.rooster.gather.cmd.device.DeviceConnectionContainer;
 
 import java.io.InvalidClassException;
+import java.net.UnknownHostException;
 import java.util.Date;
-import java.util.List;
 
 /**
  * <p>
@@ -32,7 +29,7 @@ public abstract class GatherSlot {
 	 */
 	private GatherHost _host;
 	/**
-	 * 
+	 * 数据包解析器
 	 */
 	private IDataParser _dataParser;
 
@@ -49,12 +46,12 @@ public abstract class GatherSlot {
 	 * @param name 采集槽名称
 	 * @param _host 采集槽所在主机
 	 */
-	public GatherSlot(String name, GatherHost _host) {
+	GatherSlot(String name, GatherHost _host) {
 		this.name = name;
 		this._host = _host;
 	}
 
-	public void setDataParser(String parser)
+	void setDataParser(String parser)
 			throws InvalidClassException, ClassNotFoundException, IllegalAccessException, InstantiationException {
 		setDataParser(parser, "com.incarcloud.rooster.datapack");
 	}
@@ -71,7 +68,7 @@ public abstract class GatherSlot {
 	 * @throws IllegalAccessException
 	 * @throws InstantiationException
 	 */
-	public void setDataParser(String parser, String pack)
+	void setDataParser(String parser, String pack)
 			throws InvalidClassException, ClassNotFoundException, IllegalAccessException, InstantiationException {
 		// 利用反射构造出对应的解析器对象
 		String fullName = String.format("%s.%s", pack, parser);
@@ -84,19 +81,54 @@ public abstract class GatherSlot {
 		_dataParser = dataParser;
 	}
 
-	IDataParser getDataParser() {
+	public IDataParser getDataParser() {
 		return _dataParser;
 	}
 
 	/**
 	 * 开始运行
 	 */
-	abstract void start();
+    public void start(){
+        if(null == _dataParser){
+            throw new RuntimeException("dataParse is  null !!");
+        }
+
+        if(null == _host){
+            throw new RuntimeException("host is  null !!");
+        }
+
+        start0();
+    }
+
+    protected abstract void start0();
 
 	/**
 	 * 停止
 	 */
-	abstract void stop();
+    public abstract void stop();
+
+	/**
+	 * 获取传输协议
+	 *
+	 * @return  tcp/udp/mqtt
+	 */
+	public abstract String getTransportProtocal();
+
+	/**
+	 * 获取监听端口
+	 * @return
+	 */
+	public abstract int getListenPort();
+
+	/**
+	 * 获取连接设备使用的标准协议
+	 *
+	 * @return
+	 */
+	/*public String getDeviceProtocal(){
+
+	}*/
+
 
 	/**
 	 * 将数据包处理任务扔到队列中
@@ -114,6 +146,30 @@ public abstract class GatherSlot {
 	public String getName() {
 		return name;
 	}
-	
 
+
+	/**
+	 * 获取设备连接容器
+	 *
+	 * @return
+	 */
+	public DeviceConnectionContainer getDeviceConnectionContainer(){
+		return  _host.getContainer();
+	}
+
+	/**
+	 * 注册连接的设备信息到远程
+	 * @param conn
+	 */
+	public void registerConnectionToRemote(DeviceConnection conn) throws UnknownHostException{
+		_host.registerConnectionToRemote(conn);
+	}
+
+	/**
+	 * 从远程移除设备连接信息
+	 * @param vin
+	 */
+	public void removeConnectionFromRemote(String vin){
+		_host.removeConnectionFromRemote(vin);
+	}
 }

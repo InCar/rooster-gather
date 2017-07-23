@@ -18,8 +18,10 @@ repositories {
 }
 
 dependencies {
+    compile("com.google.code.gson:gson:2.2.2")
+
+
     compile("io.netty:netty-all:4.1.+")
-    compile("org.jdeferred:jdeferred-core:1.2.+")
     compile("org.slf4j:slf4j-api:1.7.+")
     compile project("rooster-shared")
     testCompile("junit:junit:4.+")
