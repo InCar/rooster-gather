@@ -10,6 +10,7 @@ import com.incarcloud.rooster.gather.cmd.RespContent;
 import com.incarcloud.rooster.gather.cmd.device.DeviceConnection;
 import com.incarcloud.rooster.gather.cmd.device.DeviceConnectionContainer;
 import com.incarcloud.rooster.util.StringUtil;
+import io.netty.buffer.ByteBuf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,16 +52,15 @@ public class CommandService {
             return resp;
         }
 
-
-
         try {
             CommandFacotry commandFacotry = CommandFacotryManager.getCommandFacotry(conn.getProtocol());
-            byte[] cmd = commandFacotry.createCommand(req.getCmdType());
-            if (null == cmd) {
+            ByteBuf cmdBuf = commandFacotry.createCommand(req.getCmdType());
+            if (null == cmdBuf) {
                 resp.setCode(CommandServerRespCode.OP_NOTSUPPORT);
                 s_logger.error("command not supoort,vin=" + req.getVin() + ",CmdType=" + req.getCmdType());
             } else {
-                conn.getChannel().writeAndFlush(cmd);
+                s_logger.debug(conn.getChannel().isActive() + "");
+                conn.getChannel().writeAndFlush(cmdBuf);
                 resp.setCode(CommandServerRespCode.OP_SUCCESS);
                 s_logger.debug("command execute success ,vin=" + req.getVin() + ",CmdType=" + req.getCmdType());
             }
