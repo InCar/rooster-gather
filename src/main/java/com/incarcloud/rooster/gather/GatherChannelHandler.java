@@ -14,6 +14,7 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 
 import java.net.SocketAddress;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 采集器的通道处理类
@@ -89,9 +90,9 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
         try {
 
             //注册设备会话
-            String v=null;//TODO 这里和下面待修改
             if (null == vin) {//已注册就不用再次注册
-                v = getVin(buf,_parser);
+                Map<String,Object> metaData = getPackMetaData(buf,_parser);
+                registerConnection(metaData,channel);
             }
 
             // 1、解析包
@@ -102,10 +103,7 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
                 return;
             }
 
-            //TODO
-            if (null == vin) {//已注册就不用再次注册
-                registerConnection(v, ctx.channel(),listPacks.get(0).getProtocol());//TODO
-            }
+
 
 
 
@@ -154,20 +152,28 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
     /**
      * 注册设备连接
      *
-     * @param vin
+     * @param metaData 包含车辆 vin/设备号/协议
      * @param channel
-     * @param  protocol
      */
-    private void registerConnection(String vin, Channel channel,String protocol) {
+    private void registerConnection(Map<String,Object> metaData,Channel channel) {
+        String vin0 = (String) metaData.get("vin");
+        String deviceId = (String) metaData.get("deviceId");
+        String protocol = (String) metaData.get("protocol");
 
-        if (StringUtil.isBlank(vin)) {
-            return;
+        if (StringUtil.isBlank(vin0)) {
+            if(StringUtil.isBlank(deviceId)){
+                return;
+            }
+
+            vin0 = protocol+"_"+deviceId;//没有vin码就用设备号加协议代替
         }
 
-        //1.缓存连接
-        DeviceConnection conn = new DeviceConnection(vin, channel,protocol);
-        _slot.getDeviceConnectionContainer().addDeviceConnection(conn);
 
+
+        //1.缓存连接
+        DeviceConnection conn = new DeviceConnection(vin0, channel,protocol);
+        _slot.getDeviceConnectionContainer().addDeviceConnection(conn);
+        final String _vin0 = vin;
 
         //2.远程注册,开线程避免阻塞
         new Thread(new Runnable() {
@@ -175,7 +181,7 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
             public void run() {
                 try {
                     _slot.registerConnectionToRemote(conn);
-                    GatherChannelHandler.this.vin = vin;
+                    GatherChannelHandler.this.vin = _vin0;
                     s_logger.debug("success register device connection to remote,vin="+vin);
                 }catch (Exception e){
                     e.printStackTrace();
@@ -188,12 +194,12 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
 
 
     /**
-     * 获取vin码
+     * 获取vin/设备号/协议
      * @param buf
      * @param _parser
      * @return
      */
-    private String getVin(ByteBuf buf,IDataParser _parser){
-        return "123456789";
+    private Map<String,Object> getPackMetaData(ByteBuf buf, IDataParser _parser){
+        return _parser.getMetaData(buf);
     }
 }
