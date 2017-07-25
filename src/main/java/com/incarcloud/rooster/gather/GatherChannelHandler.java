@@ -104,10 +104,6 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
             }
 
 
-
-
-
-
             // 2、扔到host的消息队列
             for (DataPack pack : listPacks) {
                 _slot.putToCacheQueue(new DataPackWrap(channel, _parser, pack));
@@ -150,22 +146,30 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
 
 
     /**
-     * 注册设备连接
+     * 注册设备连接,便于下发命令
      *
      * @param metaData 包含车辆 vin/设备号/协议
      * @param channel
      */
     private void registerConnection(Map<String,Object> metaData,Channel channel) {
         String vin0 = (String) metaData.get("vin");
-        String deviceId = (String) metaData.get("deviceId");
         String protocol = (String) metaData.get("protocol");
 
-        if (StringUtil.isBlank(vin0)) {
+        if (StringUtil.isBlank(vin0)) {//无vin码的连接不注册
+            return;
+
+
+            /* //TODO 不支持无vin码的协议
+            String deviceId = (String) metaData.get("deviceId");
             if(StringUtil.isBlank(deviceId)){
+                s_logger.error("vin  and deviceId are all null !!");
                 return;
             }
 
-            vin0 = protocol+"_"+deviceId;//没有vin码就用设备号加协议代替
+            //没有vin码就用设备号加协议(不带版本号)代替
+            String protocolWithOutVersion =  protocol.split("\\-")[0]+"-"+protocol.split("\\-")[1];
+            vin0 = protocolWithOutVersion+"_"+deviceId;
+            */
         }
 
 
