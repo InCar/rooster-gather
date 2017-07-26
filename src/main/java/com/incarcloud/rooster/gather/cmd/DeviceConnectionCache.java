@@ -2,9 +2,6 @@ package com.incarcloud.rooster.gather.cmd;/**
  * Created by fanbeibei on 2017/7/17.
  */
 
-import com.incarcloud.rooster.gather.cmd.device.DeviceConnection;
-import com.incarcloud.rooster.gather.cmd.device.DeviceConnectionContainer;
-
 import java.util.concurrent.ConcurrentHashMap;
 
 /**

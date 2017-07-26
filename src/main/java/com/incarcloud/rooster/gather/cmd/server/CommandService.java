@@ -7,8 +7,6 @@ import com.incarcloud.rooster.datapack.CommandFacotryManager;
 import com.incarcloud.rooster.gather.cmd.CommandServerRespCode;
 import com.incarcloud.rooster.gather.cmd.ReqContent;
 import com.incarcloud.rooster.gather.cmd.RespContent;
-import com.incarcloud.rooster.gather.cmd.device.DeviceConnection;
-import com.incarcloud.rooster.gather.cmd.device.DeviceConnectionContainer;
 import com.incarcloud.rooster.util.StringUtil;
 import io.netty.buffer.ByteBuf;
 import org.slf4j.Logger;
