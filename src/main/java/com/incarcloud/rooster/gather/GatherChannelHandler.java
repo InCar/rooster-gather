@@ -1,6 +1,7 @@
 package com.incarcloud.rooster.gather;
 
 import com.incarcloud.rooster.datapack.DataPack;
+import com.incarcloud.rooster.gather.remotecmd.device.DeviceConnection;
 import com.incarcloud.rooster.util.StringUtil;
 import org.slf4j.LoggerFactory;
 
@@ -154,6 +155,9 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
         String vin0 = (String) metaData.get("vin");
         String protocol = (String) metaData.get("protocol");
 
+
+        s_logger.debug("registerConnection vin :"+vin0);
+
         if (StringUtil.isBlank(vin0)) {//无vin码的连接不注册
             return;
 
@@ -176,7 +180,7 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
         //1.缓存连接
         DeviceConnection conn = new DeviceConnection(vin0, channel,protocol);
         _slot.getDeviceConnectionContainer().addDeviceConnection(conn);
-        final String _vin0 = vin;
+        final String _vin0 = vin0;
 
         //2.远程注册,开线程避免阻塞
         new Thread(new Runnable() {

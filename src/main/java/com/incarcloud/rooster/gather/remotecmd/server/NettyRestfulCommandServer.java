@@ -1,8 +1,9 @@
-package com.incarcloud.rooster.gather.cmd.server;/**
+package com.incarcloud.rooster.gather.remotecmd.server;/**
  * Created by fanbeibei on 2017/7/17.
  */
 
 import com.incarcloud.rooster.gather.GatherHost;
+import com.incarcloud.rooster.gather.cmd.server.AbstractRestfulCommandServer;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;

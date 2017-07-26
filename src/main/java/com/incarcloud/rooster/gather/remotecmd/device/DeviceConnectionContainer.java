@@ -1,4 +1,4 @@
-package com.incarcloud.rooster.gather.cmd.device;
+package com.incarcloud.rooster.gather.remotecmd.device;
 
 /**
  * 设备连接容器
