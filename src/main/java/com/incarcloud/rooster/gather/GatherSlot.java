@@ -1,6 +1,8 @@
 package com.incarcloud.rooster.gather;
 
 import com.incarcloud.rooster.datapack.IDataParser;
+import com.incarcloud.rooster.gather.remotecmd.device.DeviceConnection;
+import com.incarcloud.rooster.gather.remotecmd.device.DeviceConnectionContainer;
 
 import java.io.InvalidClassException;
 import java.net.UnknownHostException;
@@ -49,7 +51,7 @@ public abstract class GatherSlot {
 		this._host = _host;
 	}
 
-	void setDataParser(String parser)
+	public void setDataParser(String parser)
 			throws InvalidClassException, ClassNotFoundException, IllegalAccessException, InstantiationException {
 		setDataParser(parser, "com.incarcloud.rooster.datapack");
 	}

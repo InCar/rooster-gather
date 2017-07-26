@@ -1,4 +1,4 @@
-package com.incarcloud.rooster.gather.cmd;/**
+package com.incarcloud.rooster.gather.remotecmd.device;/**
  * Created by fanbeibei on 2017/7/17.
  */
 
@@ -9,14 +9,14 @@ import java.util.concurrent.ConcurrentHashMap;
  * @Description: 设备连接缓存
  * @date 2017/7/17 10:54
  */
-public class DeviceConnectionCache implements DeviceConnectionContainer{
+public class DeviceConnectionCache implements DeviceConnectionContainer {
 
     /**
      * vin -> DeviceConnection
      */
     private ConcurrentHashMap<String,DeviceConnection> connMap = new ConcurrentHashMap<>(1000);
 
-    public  DeviceConnectionCache(){
+    public DeviceConnectionCache(){
     }
 
     /**

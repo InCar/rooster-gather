@@ -5,7 +5,6 @@ package com.incarcloud.rooster.gather;/**
 import com.incarcloud.rooster.gather.cmd.CommandType;
 import com.incarcloud.rooster.gather.cmd.RespContent;
 import com.incarcloud.rooster.gather.cmd.client.CommandClient;
-import com.incarcloud.rooster.gather.cmd.client.ZookeeperRestfulCommandClient;
 
 /**
  * @author Fan Beibei

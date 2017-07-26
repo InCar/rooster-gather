@@ -1,4 +1,4 @@
-package com.incarcloud.rooster.gather.cmd.server;/**
+package com.incarcloud.rooster.gather.remotecmd.server;/**
  * Created by fanbeibei on 2017/7/17.
  */
 
@@ -7,6 +7,8 @@ import com.incarcloud.rooster.datapack.CommandFacotryManager;
 import com.incarcloud.rooster.gather.cmd.CommandServerRespCode;
 import com.incarcloud.rooster.gather.cmd.ReqContent;
 import com.incarcloud.rooster.gather.cmd.RespContent;
+import com.incarcloud.rooster.gather.remotecmd.device.DeviceConnection;
+import com.incarcloud.rooster.gather.remotecmd.device.DeviceConnectionContainer;
 import com.incarcloud.rooster.util.StringUtil;
 import io.netty.buffer.ByteBuf;
 import org.slf4j.Logger;
@@ -23,9 +25,8 @@ public class CommandService {
     private DeviceConnectionContainer connContainer;
 //    private CommandFacotry commandFacotry;
 
-    public CommandService(DeviceConnectionContainer connContainer/*, CommandFacotry commandFacotry*/) {
+    public CommandService(DeviceConnectionContainer connContainer) {
         this.connContainer = connContainer;
-//        this.commandFacotry = commandFacotry;
     }
 
     /**
