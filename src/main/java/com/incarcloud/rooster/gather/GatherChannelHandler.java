@@ -1,7 +1,6 @@
 package com.incarcloud.rooster.gather;
 
 import com.incarcloud.rooster.datapack.DataPack;
-import com.incarcloud.rooster.gather.cmd.device.DeviceConnection;
 import com.incarcloud.rooster.util.StringUtil;
 import org.slf4j.LoggerFactory;
 

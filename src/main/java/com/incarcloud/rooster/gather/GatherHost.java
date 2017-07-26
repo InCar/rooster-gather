@@ -1,8 +1,6 @@
 package com.incarcloud.rooster.gather;
 
 import com.incarcloud.rooster.gather.cmd.DeviceConnectionCache;
-import com.incarcloud.rooster.gather.cmd.device.DeviceConnection;
-import com.incarcloud.rooster.gather.cmd.device.DeviceConnectionContainer;
 import com.incarcloud.rooster.gather.cmd.device.DeviceConnectionRemoteRegister;
 import com.incarcloud.rooster.gather.cmd.server.CommandServer;
 import com.incarcloud.rooster.mq.IBigMQ;
@@ -12,7 +10,6 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Calendar;

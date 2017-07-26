@@ -1,8 +1,6 @@
 package com.incarcloud.rooster.gather;
 
 import com.incarcloud.rooster.datapack.IDataParser;
-import com.incarcloud.rooster.gather.cmd.device.DeviceConnection;
-import com.incarcloud.rooster.gather.cmd.device.DeviceConnectionContainer;
 
 import java.io.InvalidClassException;
 import java.net.UnknownHostException;
