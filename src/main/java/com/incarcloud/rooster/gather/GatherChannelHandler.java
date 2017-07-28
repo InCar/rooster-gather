@@ -13,6 +13,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 
 import java.net.SocketAddress;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -44,7 +45,6 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
     GatherChannelHandler(GatherSlot slot) {
         _slot = slot;
         _parser = slot.getDataParser();
-
     }
 
 
@@ -85,6 +85,7 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
     private void OnRead(ChannelHandlerContext ctx, ByteBuf buf) {
 //        s_logger.debug("!!!!----" + _parser.getClass());
 
+
         Channel channel = ctx.channel();
         List<DataPack> listPacks = null;
         try {
@@ -103,6 +104,10 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
                 return;
             }
 
+            for (DataPack pack : listPacks) {
+                Date now = new Date();
+                pack.setReciveTime(now);//数据包的接收时间
+            }
 
             // 2、扔到host的消息队列
             for (DataPack pack : listPacks) {
