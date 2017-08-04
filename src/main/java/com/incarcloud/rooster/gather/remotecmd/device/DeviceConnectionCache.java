@@ -2,6 +2,8 @@ package com.incarcloud.rooster.gather.remotecmd.device;/**
  * Created by fanbeibei on 2017/7/17.
  */
 
+import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -57,13 +59,14 @@ public class DeviceConnectionCache implements DeviceConnectionContainer {
     }
 
 
-    /**
-     * 清理不活动的连接的任务
-     */
-    /*private class CleanInActiveDeviceConnectionTask implements Runnable{
-        @Override
-        public void run() {
+    @Override
+    public Collection<DeviceConnection> getAllDeviceConnection() {
+        return connMap.values();
+    }
 
-        }
-    }*/
+
+    @Override
+    public void removeAllDeviceConnection() {
+        connMap.clear();
+    }
 }

@@ -163,21 +163,16 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
 
         s_logger.debug("registerConnection vin :"+vin0);
 
-        if (StringUtil.isBlank(vin0)) {//无vin码的连接不注册
-            return;
-
-
-            /* //TODO 不支持无vin码的协议
+        if (StringUtil.isBlank(vin0)) {
             String deviceId = (String) metaData.get("deviceId");
             if(StringUtil.isBlank(deviceId)){
                 s_logger.error("vin  and deviceId are all null !!");
                 return;
             }
 
-            //没有vin码就用设备号加协议(不带版本号)代替
-            String protocolWithOutVersion =  protocol.split("\\-")[0]+"-"+protocol.split("\\-")[1];
-            vin0 = protocolWithOutVersion+"_"+deviceId;
-            */
+            //没有vin码就用 DEVICEID+#+设备号  代替
+            vin0 = "DEVICEID#"+deviceId;
+
         }
 
 
