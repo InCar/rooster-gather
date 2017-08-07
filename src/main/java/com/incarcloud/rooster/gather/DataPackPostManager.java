@@ -6,8 +6,8 @@ import com.incarcloud.rooster.datapack.IDataParser;
 import com.incarcloud.rooster.mq.IBigMQ;
 import com.incarcloud.rooster.mq.MQMsg;
 import com.incarcloud.rooster.mq.MqSendResult;
-import com.incarcloud.rooster.util.DataTool;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufUtil;
 import io.netty.channel.Channel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -278,6 +278,7 @@ public class DataPackPostManager {
                     if (null == sendResult.getException()) {// 正常返回
                         s_logger.debug("success send to MQ:" + sendResult.getData());
                         ByteBuf resp = dataParser.createResponse(dataPack, ERespReason.OK);
+                        s_logger.debug("success send resp:"+ByteBufUtil.hexDump(resp));
 
                         if (null != resp) {//需要回应设备
                             channel.writeAndFlush(resp);
@@ -287,6 +288,7 @@ public class DataPackPostManager {
                     } else {
                         s_logger.error("failed send to MQ:" + sendResult.getException().getMessage());
                         ByteBuf resp = dataParser.createResponse(dataPack, ERespReason.ERROR);
+                        s_logger.debug("failed send resp:"+ByteBufUtil.hexDump(resp));
 
                         if (null != resp) {//需要回应设备
                             channel.writeAndFlush(resp);
@@ -331,6 +333,7 @@ public class DataPackPostManager {
                 if (null == sendResult.getException()) {// 正常返回
                     s_logger.debug("success send to MQ:" + sendResult.getData());
                     ByteBuf resp = dataParser.createResponse(dataPack, ERespReason.OK);
+                    s_logger.debug("success send resp:"+ByteBufUtil.hexDump(resp));
 
                     if (null != resp) {//需要回应设备
                         channel.writeAndFlush(resp);
@@ -340,6 +343,7 @@ public class DataPackPostManager {
                 } else {
                     s_logger.error("failed send to MQ:" + sendResult.getException().getMessage());
                     ByteBuf resp = dataParser.createResponse(dataPack, ERespReason.ERROR);
+                    s_logger.debug("failed send resp:"+ByteBufUtil.hexDump(resp));
 
                     if (null != resp) {//需要回应设备
                         channel.writeAndFlush(resp);
