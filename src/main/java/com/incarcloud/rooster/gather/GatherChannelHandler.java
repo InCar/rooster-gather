@@ -108,10 +108,10 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
                 return;
             }
 
-            /*for (DataPack pack : listPacks) {G
+            for (DataPack pack : listPacks) {
                 Date now = new Date();
                 pack.setReciveTime(now);//数据包的接收时间
-            }*/
+            }
 
             // 2、扔到host的消息队列
             for (DataPack pack : listPacks) {
