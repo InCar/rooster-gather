@@ -199,6 +199,8 @@ public class DataPackPostManager {
         @Override
         public void run() {
 
+            s_logger.debug("####QueueConsumerThread  start");
+
             List<DataPackWrap> packWrapList = new ArrayList<DataPackWrap>(BATCH_POST_SIZE);
 
             while (true) {
@@ -212,6 +214,7 @@ public class DataPackPostManager {
 
                         //取满一个批次了，直接发送完后再取下一个批次
                         if (BATCH_POST_SIZE == packWrapList.size()) {
+                            s_logger.debug("!!a batch complete:"+packWrapList.size());
                             batchSendDataPackToMQ(packWrapList);
                             packWrapList.clear();
                         }
@@ -221,6 +224,7 @@ public class DataPackPostManager {
 
                     //没取到说明队列暂时没有数据，将取到的批量发送
                     if (packWrapList.size() > 0) {
+                        s_logger.debug("##a batch complete:"+packWrapList.size());
                         batchSendDataPackToMQ(packWrapList);
                         packWrapList.clear();
                     }
