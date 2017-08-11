@@ -52,6 +52,8 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
         ByteBuf buf = (ByteBuf) msg;
 
+        s_logger.debug("buf size="+buf.readableBytes());
+
         if (buf.readableBytes() > 2 * 1024 * 1024) { //大于2M 直接丢弃
             buf.release();
             return;
@@ -83,7 +85,7 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
     }
 
     private void OnRead(ChannelHandlerContext ctx, ByteBuf buf) {
-//        s_logger.debug("!!!!----" + _parser.getClass());
+        s_logger.debug("!!!!----" + _parser.getClass());
 
 
         Channel channel = ctx.channel();
