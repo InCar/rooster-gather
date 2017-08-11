@@ -101,6 +101,8 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
             // 1、解析包
             listPacks = _parser.extract(buf);
 
+            s_logger.debug("listpacks size:"+listPacks.size());
+
             if (null == listPacks || 0 == listPacks.size()) {
                 s_logger.debug("no packs!!");
                 return;

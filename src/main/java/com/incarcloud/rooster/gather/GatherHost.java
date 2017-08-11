@@ -252,6 +252,9 @@ public class GatherHost {
             return;
         }
 
+
+        s_logger.debug("putToCacheQueue:"+packWrap);
+
         dataPackPostManager.add(packWrap);
     }
 
