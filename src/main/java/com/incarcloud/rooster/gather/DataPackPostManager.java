@@ -262,7 +262,6 @@ public class DataPackPostManager {
                     MQMsg mqMsg = new MQMsg(dp.getMark(), dp.serializeToBytes());
 
                     msgList.add(mqMsg);
-                    s_logger.debug("DataPack:"+dp.toString());
                 } catch (UnsupportedEncodingException e) {
                     s_logger.error("plant unsupport  UTF-8," + packWrap.getDataPack());
                 }
