@@ -243,6 +243,8 @@ public class DataPackPostManager {
          * @param packWrapBatch
          */
         protected void batchSendDataPackToMQ(List<DataPackWrap> packWrapBatch) {
+            s_logger.debug("batchSendDataPackToMQ:"+packWrapBatch.size());
+
             if (null == packWrapBatch || 0 == packWrapBatch.size()) {
                 throw new IllegalArgumentException();
             }
@@ -265,6 +267,7 @@ public class DataPackPostManager {
 
             List<MqSendResult> resultList = iBigMQ.post(msgList);
 
+            s_logger.debug("resultList:"+resultList.size());
 
             //回应设备
             for (int i = 0; i < resultList.size(); i++) {
@@ -337,7 +340,10 @@ public class DataPackPostManager {
 
                     if (null != resp) {//需要回应设备
                         channel.writeAndFlush(resp);
+                    }else{
+
                     }
+
 
 
                 } else {
@@ -347,6 +353,8 @@ public class DataPackPostManager {
 
                     if (null != resp) {//需要回应设备
                         channel.writeAndFlush(resp);
+                    }else{
+
                     }
                 }
 

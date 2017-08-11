@@ -115,8 +115,9 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
 
             // 2、扔到host的消息队列
             for (DataPack pack : listPacks) {
+
                 _slot.putToCacheQueue(new DataPackWrap(channel, _parser, pack));
-//                s_logger.debug("#####putToCacheQueue OK");
+                s_logger.debug("#####putToCacheQueue OK "+pack);
             }
 
         } catch (Exception e) {
