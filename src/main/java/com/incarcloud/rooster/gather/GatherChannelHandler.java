@@ -104,7 +104,7 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
                 return;
             }
 
-            /*for (DataPack pack : listPacks) {
+            /*for (DataPack pack : listPacks) {G
                 Date now = new Date();
                 pack.setReciveTime(now);//数据包的接收时间
             }*/
@@ -142,11 +142,11 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
         SocketAddress devAddr = ctx.channel().remoteAddress();
         s_logger.info("device " + devAddr + " disconnected");
 
-        if (null != vin) {//释放掉缓存的连接
+        /*if (null != vin) {//释放掉缓存的连接
             _slot.getDeviceConnectionContainer().removeDeviceConnection(vin);
             _slot.removeConnectionFromRemote(vin);
             s_logger.debug("success remove device connection from remote,vin="+vin);
-        }
+        }*/
     }
 
 
