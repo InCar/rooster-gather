@@ -93,10 +93,10 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
         try {
 
             //注册设备会话
-            if (null == vin) {//已注册就不用再次注册
+            /*if (null == vin) {//已注册就不用再次注册
                 Map<String,Object> metaData = getPackMetaData(buf,_parser);
                 registerConnection(metaData,channel);
-            }
+            }*/
 
             // 1、解析包
             listPacks = _parser.extract(buf);
@@ -147,11 +147,11 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
         SocketAddress devAddr = ctx.channel().remoteAddress();
         s_logger.info("device " + devAddr + " disconnected");
 
-        if (null != vin) {//释放掉缓存的连接
+        /*if (null != vin) {//释放掉缓存的连接
             _slot.getDeviceConnectionContainer().removeDeviceConnection(vin);
             _slot.removeConnectionFromRemote(vin);
             s_logger.debug("success remove device connection from remote,vin="+vin);
-        }
+        }*/
     }
 
 
