@@ -94,6 +94,8 @@ public class GatherHost {
         if (_bRunning)
             return;
 
+        dataPackPostManager.start();
+
         if (null == _slots || 0 == _slots.size()) {
             throw new RuntimeException("no slot!!");
         }
@@ -103,9 +105,6 @@ public class GatherHost {
         for (GatherSlot slot : _slots) {
             slot.start();
         }
-
-
-        dataPackPostManager.start();
 
 
         if(null != cmdServer){
@@ -251,6 +250,9 @@ public class GatherHost {
         if (null == packWrap) {
             return;
         }
+
+
+        s_logger.debug("putToCacheQueue:"+packWrap);
 
         dataPackPostManager.add(packWrap);
     }

@@ -28,8 +28,11 @@ public class NettyRestfulCommandServer extends  AbstractRestfulCommandServer{
 
     private GatherHost host;
 
-    EventLoopGroup bossGroup = new NioEventLoopGroup(); // (1)
-    EventLoopGroup workerGroup = new NioEventLoopGroup();
+    private EventLoopGroup bossGroup = new NioEventLoopGroup(); // (1)
+    private EventLoopGroup workerGroup = new NioEventLoopGroup();
+    private Channel _channel;
+
+
 
 
     public NettyRestfulCommandServer(GatherHost host,int port){
@@ -61,22 +64,24 @@ public class NettyRestfulCommandServer extends  AbstractRestfulCommandServer{
                 }
             });
 
-            Channel ch = b.bind(port).sync().channel();
-
+            _channel = b.bind(port).sync().channel();
             s_logger.info(host.getName()+"-command server start,listen on port:"+port);
-
-            ch.closeFuture().sync();
 
         }catch (InterruptedException e) {
             e.printStackTrace();
 
-        } finally {
-            stop();
         }
     }
 
     @Override
     public void stop() {
+
+        try {
+            _channel.closeFuture().sync();
+        }
+        catch (InterruptedException ex){
+            throw new RuntimeException(ex);
+        }
         bossGroup.shutdownGracefully();
         workerGroup.shutdownGracefully();
         s_logger.info(host.getName()+"-command server stop!");

@@ -52,6 +52,8 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
         ByteBuf buf = (ByteBuf) msg;
 
+        s_logger.debug("buf size="+buf.readableBytes());
+
         if (buf.readableBytes() > 2 * 1024 * 1024) { //大于2M 直接丢弃
             buf.release();
             return;
@@ -83,7 +85,7 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
     }
 
     private void OnRead(ChannelHandlerContext ctx, ByteBuf buf) {
-//        s_logger.debug("!!!!----" + _parser.getClass());
+        s_logger.debug("!!!!----" + _parser.getClass());
 
 
         Channel channel = ctx.channel();
@@ -99,6 +101,8 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
             // 1、解析包
             listPacks = _parser.extract(buf);
 
+            s_logger.debug("listpacks size:"+listPacks.size());
+
             if (null == listPacks || 0 == listPacks.size()) {
                 s_logger.debug("no packs!!");
                 return;
@@ -112,7 +116,7 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
             // 2、扔到host的消息队列
             for (DataPack pack : listPacks) {
                 _slot.putToCacheQueue(new DataPackWrap(channel, _parser, pack));
-//                s_logger.debug("#####putToCacheQueue OK");
+                s_logger.debug("#####putToCacheQueue OK "+pack);
             }
 
         } catch (Exception e) {
