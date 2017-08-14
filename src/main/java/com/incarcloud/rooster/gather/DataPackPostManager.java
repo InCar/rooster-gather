@@ -343,7 +343,10 @@ public class DataPackPostManager {
 
                     if (null != resp) {//需要回应设备
                         channel.writeAndFlush(resp);
+                    }else{
+
                     }
+
 
 
                 } else {
@@ -353,6 +356,8 @@ public class DataPackPostManager {
 
                     if (null != resp) {//需要回应设备
                         channel.writeAndFlush(resp);
+                    }else{
+
                     }
                 }
 
