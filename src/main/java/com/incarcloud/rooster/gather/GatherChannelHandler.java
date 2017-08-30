@@ -93,8 +93,6 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
         List<DataPack> listPacks = null;
         try {
 
-
-
             // 1、解析包
             listPacks = _parser.extract(buf);
 
