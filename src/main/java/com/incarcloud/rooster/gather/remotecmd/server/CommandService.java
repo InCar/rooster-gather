@@ -2,8 +2,8 @@ package com.incarcloud.rooster.gather.remotecmd.server;/**
  * Created by fanbeibei on 2017/7/17.
  */
 
-import com.incarcloud.rooster.datapack.CommandFacotry;
 import com.incarcloud.rooster.datapack.CommandFacotryManager;
+import com.incarcloud.rooster.datapack.CommandFactory;
 import com.incarcloud.rooster.gather.cmd.CommandServerRespCode;
 import com.incarcloud.rooster.gather.cmd.ReqContent;
 import com.incarcloud.rooster.gather.cmd.RespContent;
@@ -52,7 +52,7 @@ public class CommandService {
         }
 
         try {
-            CommandFacotry commandFacotry = CommandFacotryManager.getCommandFacotry(conn.getProtocol());
+            CommandFactory commandFacotry = CommandFacotryManager.getCommandFacotry(conn.getProtocol());
             ByteBuf cmdBuf = commandFacotry.createCommand(req.getCmdType());
             if (null == cmdBuf) {
                 resp.setCode(CommandServerRespCode.OP_NOTSUPPORT);
