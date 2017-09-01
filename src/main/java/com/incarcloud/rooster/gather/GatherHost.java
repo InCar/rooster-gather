@@ -113,7 +113,7 @@ public class GatherHost {
 
         _bRunning = true;
 
-        s_logger.info(name + "start success!!");
+        s_logger.info(name + " start success!!");
     }
 
     /**

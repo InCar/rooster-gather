@@ -22,16 +22,16 @@ public abstract class GatherSlot {
 	/**
 	 * 名称
 	 */
-	private String name;
+	protected String name;
 
 	/**
 	 * 采集槽所在主机
 	 */
-	private GatherHost _host;
+	protected GatherHost _host;
 	/**
 	 * 数据包解析器
 	 */
-	private IDataParser _dataParser;
+	protected IDataParser _dataParser;
 
 	/**
 	 * @param host
@@ -88,7 +88,7 @@ public abstract class GatherSlot {
 	/**
 	 * 开始运行
 	 */
-    public void start(){
+    public synchronized void start(){
         if(null == _dataParser){
             throw new RuntimeException("dataParse is  null !!");
         }

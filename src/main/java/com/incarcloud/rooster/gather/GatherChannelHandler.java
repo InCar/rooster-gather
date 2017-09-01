@@ -3,6 +3,7 @@ package com.incarcloud.rooster.gather;
 import com.incarcloud.rooster.datapack.DataPack;
 import com.incarcloud.rooster.gather.remotecmd.device.DeviceConnection;
 import com.incarcloud.rooster.util.StringUtil;
+import io.netty.buffer.Unpooled;
 import org.slf4j.LoggerFactory;
 
 import com.incarcloud.rooster.datapack.IDataParser;
@@ -92,12 +93,6 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
         List<DataPack> listPacks = null;
         try {
 
-            //注册设备会话
-            /*if (null == vin) {//已注册就不用再次注册
-                Map<String,Object> metaData = getPackMetaData(buf,_parser);
-                registerConnection(metaData,channel);
-            }*/
-
             // 1、解析包
             listPacks = _parser.extract(buf);
 
@@ -108,9 +103,15 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
                 return;
             }
 
+            //注册设备会话
+            if (null == vin) {//已注册就不用再次注册
+                Map<String,Object> metaData = getPackMetaData(listPacks.get(0),_parser);
+                registerConnection(metaData,channel);
+            }
+
             for (DataPack pack : listPacks) {
                 Date now = new Date();
-                pack.setReciveTime(now);//数据包的接收时间
+                pack.setReceiveTime(now);//数据包的接收时间
             }
 
             // 2、扔到host的消息队列
@@ -207,11 +208,16 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
 
     /**
      * 获取vin/设备号/协议
-     * @param buf
+     * @param dataPack
      * @param _parser
      * @return
      */
-    private Map<String,Object> getPackMetaData(ByteBuf buf, IDataParser _parser){
+    private Map<String,Object> getPackMetaData(DataPack dataPack, IDataParser _parser){
+
+        byte [] dataByte = dataPack.getDataBytes();
+        ByteBuf buf = Unpooled.buffer(dataByte.length);
+        buf.writeBytes(dataByte);
+
         return _parser.getMetaData(buf);
     }
 }
