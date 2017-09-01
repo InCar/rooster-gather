@@ -88,7 +88,7 @@ public abstract class GatherSlot {
 	/**
 	 * 开始运行
 	 */
-    public void start(){
+    public synchronized void start(){
         if(null == _dataParser){
             throw new RuntimeException("dataParse is  null !!");
         }
