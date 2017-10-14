@@ -49,7 +49,7 @@ public class CommandService {
 
         try {
             CommandFactory commandFacotry = CommandFacotryManager.getCommandFacotry(conn.getProtocol());
-            ByteBuf cmdBuf = commandFacotry.createCommand(req.getCmdType());
+            ByteBuf cmdBuf = commandFacotry.createCommand(req.getCmdType(),req.getArgs());
             if (null == cmdBuf) {
                 resp.setCode(CommandServerRespCode.OP_NOTSUPPORT);
                 s_logger.error("command not supoort,vin=" + req.getVin() + ",CmdType=" + req.getCmdType());
