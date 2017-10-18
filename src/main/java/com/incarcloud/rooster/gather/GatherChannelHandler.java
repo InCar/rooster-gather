@@ -109,6 +109,8 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
                 registerConnection(metaData,channel);
             }
 
+            s_logger.debug("$$$$$$$$$$$$$$$$$*************************metaData:"+getPackMetaData(listPacks.get(0),_parser));
+
             for (DataPack pack : listPacks) {
                 Date now = new Date();
                 pack.setReceiveTime(now);//数据包的接收时间
@@ -118,7 +120,7 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
             for (DataPack pack : listPacks) {
 
                 _slot.putToCacheQueue(new DataPackWrap(channel, _parser, pack));
-                s_logger.debug("#####putToCacheQueue OK "+pack);
+                s_logger.debug("#####putToCacheQueue OK!"+pack);
             }
 
         } catch (Exception e) {
