@@ -1,20 +1,17 @@
 package com.incarcloud.rooster.gather;
 
 import com.incarcloud.rooster.datapack.DataPack;
-import com.incarcloud.rooster.datapack.ERespReason;
 import com.incarcloud.rooster.datapack.IDataParser;
-import com.incarcloud.rooster.mq.IBigMQ;
-import com.incarcloud.rooster.mq.MQMsg;
-import com.incarcloud.rooster.mq.MqSendResult;
-import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Created by fanbeibei on 2017Da/6/15.
  */
 public class DataPackWrap {
+	/**
+	 * vin码
+	 */
+	private String vin;
     /**
      * 会话通道
      */
@@ -43,6 +40,8 @@ public class DataPackWrap {
         this.dataParser = dataParser;
         this.dataPack = dataPack;
     }
+    
+
 
 
     public void destroy() {
@@ -60,5 +59,27 @@ public class DataPackWrap {
     public DataPack getDataPack() {
         return dataPack;
     }
+
+
+	/**  
+	 * 获取vin  
+	 * @return vin vin  
+	 */
+	public String getVin() {
+		return vin;
+	}
+
+
+
+
+	/**  
+	 * 设置vin  
+	 * @param vin vin  
+	 */
+	public void setVin(String vin) {
+		this.vin = vin;
+	}
+	
+	
 
 }

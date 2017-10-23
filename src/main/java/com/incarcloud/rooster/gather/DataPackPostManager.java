@@ -6,6 +6,8 @@ import com.incarcloud.rooster.datapack.IDataParser;
 import com.incarcloud.rooster.mq.IBigMQ;
 import com.incarcloud.rooster.mq.MQMsg;
 import com.incarcloud.rooster.mq.MqSendResult;
+import com.incarcloud.rooster.util.StringUtil;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.channel.Channel;
@@ -259,7 +261,13 @@ public class DataPackPostManager {
                 try {
 
                     //System.out.println("****"+ DataTool.bytes2hex(dp.getDataBytes()));
-                    MQMsg mqMsg = new MQMsg(dp.getMark(), dp.serializeToBytes());
+                	//将vin码发送过去
+                	String gatherMark = dp.getMark();
+                	if(!StringUtil.isBlank(packWrap.getVin())){
+                		gatherMark += "|" + packWrap.getVin();
+                	}
+                	
+                    MQMsg mqMsg = new MQMsg(gatherMark, dp.serializeToBytes());
 
                     msgList.add(mqMsg);
                 } catch (UnsupportedEncodingException e) {
