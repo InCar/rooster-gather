@@ -27,7 +27,16 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
     private static org.slf4j.Logger s_logger = LoggerFactory.getLogger(GatherChannelHandler.class);
 
 
+    /**
+     * vin 码
+     */
     private String vin;
+    
+    /**
+     * 设备ID
+     */
+    private String deviceId;
+    
 
     /**
      * 所属的采集槽
@@ -104,9 +113,12 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
             }
 
             //注册设备会话
-            if (null == vin) {//已注册就不用再次注册
+            if (StringUtil.isBlank(deviceId) && StringUtil.isBlank(vin)) {//已注册就不用再次注册
                 Map<String,Object> metaData = getPackMetaData(listPacks.get(0),_parser);
                 registerConnection(metaData,channel);
+                
+                vin = (String) metaData.get("vin");
+                deviceId = (String) metaData.get("deviceId");
             }
 
             s_logger.debug("$$$$$$$$$$$$$$$$$*************************metaData:"+getPackMetaData(listPacks.get(0),_parser));
@@ -118,8 +130,11 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
 
             // 2、扔到host的消息队列
             for (DataPack pack : listPacks) {
-
-                _slot.putToCacheQueue(new DataPackWrap(channel, _parser, pack));
+            	DataPackWrap dpw = new DataPackWrap(channel, _parser, pack);
+            	if(!StringUtil.isBlank(vin)){
+            		dpw.setVin(vin);
+            	}
+                _slot.putToCacheQueue(dpw);
                 s_logger.debug("#####putToCacheQueue OK!"+pack);
             }
 
@@ -180,7 +195,6 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
 
             //没有vin码就用 DEVICEID+#+设备号  代替
             vin0 = "DEVICEID#"+deviceId;
-
         }
 
 
@@ -188,7 +202,6 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
         //1.缓存连接
         DeviceConnection conn = new DeviceConnection(vin0, channel,protocol);
         _slot.getDeviceConnectionContainer().addDeviceConnection(conn);
-        final String _vin0 = vin0;
 
         //2.远程注册,开线程避免阻塞
         new Thread(new Runnable() {
@@ -196,7 +209,6 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
             public void run() {
                 try {
                     _slot.registerConnectionToRemote(conn);
-                    GatherChannelHandler.this.vin = _vin0;
                     s_logger.debug("success register device connection to remote,vin="+vin);
                 }catch (Exception e){
                     e.printStackTrace();
