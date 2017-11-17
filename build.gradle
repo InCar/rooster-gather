@@ -1,43 +1,126 @@
 group 'com.incarcloud'
 version '2.0'
 
-apply plugin: 'java'
+allprojects {//公共配置
+    apply plugin: 'java'
+    apply plugin: 'maven'
 
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
+    sourceCompatibility = 1.8
+    targetCompatibility = 1.8
 
-repositories {
-    if (project.hasProperty("maven")) {
-        if (maven.equals("maven.aliyun.com"))
-            maven { url 'http://maven.aliyun.com/nexus/content/groups/public/' }
-        else
-            mavenCentral()
+
+    def mvnrepo = MAVEN_REPO_SNAPSHOT_URL
+    def nexus_username = NEXUS_USERNAME
+    def nexus_password = NEXUS_PASSWORD
+
+
+
+    if (isReleaseBuild()) {
+        println project.name + '******************RELEASE BUILD******************'
+        mvnrepo = MAVEN_REPO_RELEASE_URL
     } else {
-        mavenCentral()
+        println project.name + '******************SNAPSHOT BUILD******************'
     }
+
+
+    repositories {
+        maven { url 'http://maven.aliyun.com/nexus/content/groups/public/' }
+        maven { url MAVEN_REPO_MIRROR_URL }
+    }
+
+
+    buildscript {
+        repositories {
+            maven { url 'http://maven.aliyun.com/nexus/content/groups/public/' }
+            maven { url MAVEN_REPO_MIRROR_URL }
+        }
+
+        dependencies {
+        }
+    }
+
+
+
+    compileJava {
+        options.encoding = "utf-8"
+        options.compilerArgs << "-Xlint:unchecked"
+    }
+
+    compileTestJava {
+        options.encoding = "utf-8"
+        options.compilerArgs << "-Xlint:unchecked"
+    }
+
+    test{
+        testLogging {
+            events "passed", "skipped", "failed"
+            showStandardStreams = true
+        }
+    }
+
+    //打包源代码
+    task sourcesJar(type: Jar, dependsOn: classes) {
+        classifier = 'sources'
+        from sourceSets.main.allSource
+    }
+
+
+    artifacts {
+        archives sourcesJar
+    }
+
+
+    //如果希望gradle install，安装到.m2本地仓库，参考下面的内容
+    install {
+        repositories.mavenInstaller {
+            pom.version = "$project.version"
+            pom.artifactId = "$project.name"
+            pom.groupId = "$project.group"
+        }
+    }
+
+    //上传到nexus
+    uploadArchives {
+        repositories {
+            mavenDeployer {
+                repository(url: mvnrepo) {
+                    authentication(userName: nexus_username, password: nexus_password)
+                }
+                pom.project{
+                    name = '$project.name'
+                }
+
+            }
+        }
+    }
+
+
+    defaultTasks "assemble"
+
 }
 
+
+
+
+
 dependencies {
+    compile ("com.incarcloud:rooster-shared-all:2.0")
+
+    compile("org.springframework:spring-beans:4.3.12.RELEASE")
+    compile("org.springframework:spring-context:4.3.12.RELEASE")
+
     compile("com.google.code.gson:gson:2.2.2")
     compile("io.netty:netty-all:4.1.+")
     compile("org.slf4j:slf4j-api:1.7.+")
 
-    compile project("rooster-shared")
+//    compile project("rooster-shared")
     testCompile("junit:junit:4.+")
     testRuntime("org.apache.logging.log4j:log4j-slf4j-impl:2.8.+")
     testRuntime("org.apache.logging.log4j:log4j-core:2.8.+")
 }
 
-compileJava{
-    options.encoding = "utf-8"
-    options.compilerArgs << "-Xlint:unchecked"
+
+def isReleaseBuild() {
+    return project.version.contains("SNAPSHOT") == false
 }
 
-test{
-    testLogging {
-        events "passed", "skipped", "failed"
-        showStandardStreams = true
-    }
-}
-
-defaultTasks "assemble"
