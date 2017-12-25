@@ -26,6 +26,10 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @date 2017-06-07 17:34
  */
 public class DataPackPostManager {
+
+    /**
+     * Logger
+     */
     private static Logger s_logger = LoggerFactory.getLogger(DataPackPostManager.class);
 
     /**
@@ -60,7 +64,9 @@ public class DataPackPostManager {
      */
     private int period = 20;
 
-
+    /**
+     * 名称
+     */
     private String name;
     /**
      * 所属主机
@@ -89,7 +95,6 @@ public class DataPackPostManager {
      */
     private ThreadGroup threadGroup;
 
-
     /**
      * @param host 所属主机
      */
@@ -116,7 +121,6 @@ public class DataPackPostManager {
 
     }
 
-
     /**
      * 添加任务 （线程安全）
      *
@@ -137,7 +141,6 @@ public class DataPackPostManager {
         }
     }
 
-
     /**
      * 启动
      */
@@ -145,7 +148,6 @@ public class DataPackPostManager {
         for (int i = 0; i < threadCount; i++) {
             new Thread(threadGroup, new QueueConsumerThread(host.getBigMQ())).start();
         }
-
 
         //间隔一定时间统计队列状况
         scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
@@ -169,12 +171,10 @@ public class DataPackPostManager {
         }, period, period, TimeUnit.SECONDS);
     }
 
-
     public void stop(){
         scheduledExecutorService.shutdownNow();
 
     }
-
 
     /**
      * @author Fan Beibei
@@ -188,7 +188,6 @@ public class DataPackPostManager {
         private static final int BATCH_POST_SIZE = 16;
         private IBigMQ iBigMQ;
 
-
         public QueueConsumerThread(IBigMQ bigMQ) {
             if (null == bigMQ) {
                 throw new IllegalArgumentException();
@@ -196,7 +195,6 @@ public class DataPackPostManager {
 
             this.iBigMQ = bigMQ;
         }
-
 
         @Override
         public void run() {
@@ -242,7 +240,6 @@ public class DataPackPostManager {
             }
         }
 
-
         /**
          * 批量发送数据包到消息中间件
          *
@@ -274,7 +271,6 @@ public class DataPackPostManager {
                     s_logger.error("plant unsupport  UTF-8," + packWrap.getDataPack());
                 }
             }
-
 
             List<MqSendResult> resultList = iBigMQ.post(msgList);
 
@@ -321,7 +317,6 @@ public class DataPackPostManager {
 
         }
 
-
         /**
          * 发送单个数据包到消息中间件
          */
@@ -330,11 +325,9 @@ public class DataPackPostManager {
                 throw new IllegalArgumentException();
             }
 
-
             DataPack dataPack = packWrap.getDataPack();
             IDataParser dataParser = packWrap.getDataParser();
             Channel channel = packWrap.getChannel();
-
 
             try {
                 DataPack dp = packWrap.getDataPack();
@@ -354,9 +347,6 @@ public class DataPackPostManager {
                     }else{
 
                     }
-
-
-
                 } else {
                     s_logger.error("failed send to MQ:" + sendResult.getException().getMessage());
                     ByteBuf resp = dataParser.createResponse(dataPack, ERespReason.ERROR);
@@ -377,7 +367,5 @@ public class DataPackPostManager {
                 }
             }
         }
-
     }
-
 }

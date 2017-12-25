@@ -22,6 +22,10 @@ import java.util.Calendar;
  * @author 熊广化
  */
 public class GatherHost {
+
+    /**
+     * Logger
+     */
     private static Logger s_logger = LoggerFactory.getLogger(GatherHost.class);
 
     /**
@@ -41,14 +45,10 @@ public class GatherHost {
      */
     private DataPackPostManager dataPackPostManager;
 
-
-
     /**
      * 操作消息队列接口
      */
     private IBigMQ bigMQ;
-
-
 
     /**
      * 远程命令监听服务
@@ -100,12 +100,10 @@ public class GatherHost {
             throw new RuntimeException("no slot!!");
         }
 
-
         //启动所有采集槽
         for (GatherSlot slot : _slots) {
             slot.start();
         }
-
 
         if(null != cmdServer){
             cmdServer.start();
@@ -196,22 +194,15 @@ public class GatherHost {
                 _slots.add(slot);
             }
 
-            if("mqtt".equals(protocol)){//TODO
+            if("mqtt".equals(protocol)){
+                // TODO
             }
-
-
         }
-
-
     }
-
 
     public void addCommandServer(CommandServer cmdServer){
         this.cmdServer = cmdServer;
     }
-
-
-
 
     EventLoopGroup getBossGroup() {
         return _bossGroup;
@@ -230,16 +221,13 @@ public class GatherHost {
         return name;
     }
 
-
     public IBigMQ getBigMQ() {
         return bigMQ;
     }
 
-
     public void setBigMQ(IBigMQ bigMQ) {
         this.bigMQ = bigMQ;
     }
-
 
     /**
      * 将数据包处理任务扔到队列中
@@ -251,12 +239,10 @@ public class GatherHost {
             return;
         }
 
-
         s_logger.debug("putToCacheQueue:"+packWrap);
 
         dataPackPostManager.add(packWrap);
     }
-
 
     /**
      * 获取缓存设备连接的容器
@@ -279,7 +265,6 @@ public class GatherHost {
         String cmdServerUrl = cmdServer.getUrl();
         remoteRegister.registerConnection(conn.getVin(),cmdServerUrl);
     }
-
 
     /**
      * 从远程移除设备连接信息

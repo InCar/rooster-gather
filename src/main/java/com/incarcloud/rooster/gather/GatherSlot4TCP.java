@@ -14,9 +14,14 @@ import org.slf4j.LoggerFactory;
  *
  */
 class GatherSlot4TCP extends GatherSlot {
+
+    /**
+     * Logger
+     */
     private static Logger s_logger = LoggerFactory.getLogger(GatherSlot4TCP.class);
 
     private static final int BACKLOG_COUNT = 1024;
+
     private int _port;
     private Channel _channel;
     private ServerBootstrap _bootstrap;
