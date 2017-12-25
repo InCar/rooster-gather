@@ -1,17 +1,17 @@
 package com.incarcloud.rooster.gather;
 
 import com.incarcloud.rooster.datapack.DataPack;
+import com.incarcloud.rooster.datapack.IDataParser;
 import com.incarcloud.rooster.gather.remotecmd.device.DeviceConnection;
 import com.incarcloud.rooster.util.StringUtil;
-import io.netty.buffer.Unpooled;
-import org.slf4j.LoggerFactory;
-
-import com.incarcloud.rooster.datapack.IDataParser;
-
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufUtil;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.SocketAddress;
 import java.util.Date;
@@ -24,19 +24,22 @@ import java.util.Map;
  * @author 熊广化
  */
 public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
-    private static org.slf4j.Logger s_logger = LoggerFactory.getLogger(GatherChannelHandler.class);
 
+    /**
+     * Logger
+     */
+    private static Logger s_logger = LoggerFactory.getLogger(GatherChannelHandler.class);
 
     /**
      * vin 码
      */
     private String vin;
-    
+
     /**
      * 设备ID
      */
     private String deviceId;
-    
+
 
     /**
      * 所属的采集槽
@@ -62,13 +65,12 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
         ByteBuf buf = (ByteBuf) msg;
 
-        s_logger.debug("buf size="+buf.readableBytes());
+        s_logger.debug("Buf Size: {}", buf.readableBytes());
 
         if (buf.readableBytes() > 2 * 1024 * 1024) { //大于2M 直接丢弃
             buf.release();
             return;
         }
-
 
         _buffer.writeBytes(buf);
         buf.release();
@@ -95,8 +97,8 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
     }
 
     private void OnRead(ChannelHandlerContext ctx, ByteBuf buf) {
-        s_logger.debug("!!!!----" + _parser.getClass());
-
+        s_logger.info("Receive Bytes: {}", ByteBufUtil.hexDump(buf));
+        s_logger.debug("Parser Class: {}", _parser.getClass());
 
         Channel channel = ctx.channel();
         List<DataPack> listPacks = null;
@@ -105,23 +107,23 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
             // 1、解析包
             listPacks = _parser.extract(buf);
 
-            s_logger.debug("listpacks size:"+listPacks.size());
+            s_logger.debug("DataPackList Size: {}", listPacks.size());
 
             if (null == listPacks || 0 == listPacks.size()) {
-                s_logger.debug("no packs!!");
+                s_logger.debug("no packs!!!");
                 return;
             }
 
             //注册设备会话
             if (StringUtil.isBlank(deviceId) && StringUtil.isBlank(vin)) {//已注册就不用再次注册
-                Map<String,Object> metaData = getPackMetaData(listPacks.get(0),_parser);
-                registerConnection(metaData,channel);
-                
+                Map<String, Object> metaData = getPackMetaData(listPacks.get(0), _parser);
+                registerConnection(metaData, channel);
+
                 vin = (String) metaData.get("vin");
                 deviceId = (String) metaData.get("deviceId");
             }
 
-            s_logger.debug("$$$$$$$$$$$$$$$$$*************************metaData:"+getPackMetaData(listPacks.get(0),_parser));
+            s_logger.debug("MetaData: {}", getPackMetaData(listPacks.get(0), _parser));
 
             for (DataPack pack : listPacks) {
                 Date now = new Date();
@@ -130,12 +132,12 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
 
             // 2、扔到host的消息队列
             for (DataPack pack : listPacks) {
-            	DataPackWrap dpw = new DataPackWrap(channel, _parser, pack);
-            	if(!StringUtil.isBlank(vin)){
-            		dpw.setVin(vin);
-            	}
+                DataPackWrap dpw = new DataPackWrap(channel, _parser, pack);
+                if (!StringUtil.isBlank(vin)) {
+                    dpw.setVin(vin);
+                }
                 _slot.putToCacheQueue(dpw);
-                s_logger.debug("#####putToCacheQueue OK!"+pack);
+                s_logger.debug("Put ({}) to queue ok!", pack);
             }
 
         } catch (Exception e) {
@@ -149,7 +151,7 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         SocketAddress devAddr = ctx.channel().remoteAddress();
 
-        s_logger.info("device " + devAddr + " connected");
+        s_logger.info("Device({}) connected!", devAddr);
         super.channelActive(ctx);
     }
 
@@ -163,7 +165,7 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
 
         SocketAddress devAddr = ctx.channel().remoteAddress();
-        s_logger.info("device " + devAddr + " disconnected");
+        s_logger.info("Device({}) disconnected!", devAddr);
 
         /*if (null != vin) {//释放掉缓存的连接
             _slot.getDeviceConnectionContainer().removeDeviceConnection(vin);
@@ -179,28 +181,26 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
      * @param metaData 包含车辆 vin/设备号/协议
      * @param channel
      */
-    private void registerConnection(Map<String,Object> metaData,Channel channel) {
+    private void registerConnection(Map<String, Object> metaData, Channel channel) {
         String vin0 = (String) metaData.get("vin");
         String protocol = (String) metaData.get("protocol");
 
 
-        s_logger.debug("registerConnection vin :"+vin0);
+        s_logger.debug("registerConnection vin :" + vin0);
 
         if (StringUtil.isBlank(vin0)) {
             String deviceId = (String) metaData.get("deviceId");
-            if(StringUtil.isBlank(deviceId)){
-                s_logger.error("vin  and deviceId are all null !!");
+            if (StringUtil.isBlank(deviceId)) {
+                s_logger.error("VIN or deviceId is null !!!");
                 return;
             }
 
             //没有vin码就用 DEVICEID+#+设备号  代替
-            vin0 = "DEVICEID#"+deviceId;
+            vin0 = "DEVICEID#" + deviceId;
         }
 
-
-
         //1.缓存连接
-        DeviceConnection conn = new DeviceConnection(vin0, channel,protocol);
+        DeviceConnection conn = new DeviceConnection(vin0, channel, protocol);
         _slot.getDeviceConnectionContainer().addDeviceConnection(conn);
 
         //2.远程注册,开线程避免阻塞
@@ -209,8 +209,8 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
             public void run() {
                 try {
                     _slot.registerConnectionToRemote(conn);
-                    s_logger.debug("success register device connection to remote,vin="+vin);
-                }catch (Exception e){
+                    s_logger.debug("success register device connection to remote,vin=" + vin);
+                } catch (Exception e) {
                     e.printStackTrace();
                     s_logger.error(e.getMessage());
                 }
@@ -219,16 +219,16 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
 
     }
 
-
     /**
      * 获取vin/设备号/协议
+     *
      * @param dataPack
      * @param _parser
      * @return
      */
-    private Map<String,Object> getPackMetaData(DataPack dataPack, IDataParser _parser){
+    private Map<String, Object> getPackMetaData(DataPack dataPack, IDataParser _parser) {
 
-        byte [] dataByte = dataPack.getDataBytes();
+        byte[] dataByte = dataPack.getDataBytes();
         ByteBuf buf = Unpooled.buffer(dataByte.length);
         buf.writeBytes(dataByte);
 

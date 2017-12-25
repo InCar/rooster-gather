@@ -16,9 +16,9 @@ import java.util.Date;
  * 一个处理槽有一个采集端口，一个包解析器，结果输出给MQ
  * 
  * @author 熊广化
- *
  */
 public abstract class GatherSlot {
+
 	/**
 	 * 名称
 	 */
@@ -121,16 +121,6 @@ public abstract class GatherSlot {
 	public abstract int getListenPort();
 
 	/**
-	 * 获取连接设备使用的标准协议
-	 *
-	 * @return
-	 */
-	/*public String getDeviceProtocal(){
-
-	}*/
-
-
-	/**
 	 * 将数据包处理任务扔到队列中
 	 *
 	 * @param packWrap
@@ -146,7 +136,6 @@ public abstract class GatherSlot {
 	public String getName() {
 		return name;
 	}
-
 
 	/**
 	 * 获取设备连接容器

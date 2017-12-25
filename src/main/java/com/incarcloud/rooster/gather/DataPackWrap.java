@@ -8,6 +8,7 @@ import io.netty.channel.Channel;
  * Created by fanbeibei on 2017Da/6/15.
  */
 public class DataPackWrap {
+
 	/**
 	 * vin码
 	 */
@@ -25,7 +26,6 @@ public class DataPackWrap {
      */
     private DataPack dataPack;
 
-
     /**
      * @param channel    会话通道
      * @param dataParser 数据转换器
@@ -40,9 +40,6 @@ public class DataPackWrap {
         this.dataParser = dataParser;
         this.dataPack = dataPack;
     }
-    
-
-
 
     public void destroy() {
         dataPack.freeBuf();
@@ -60,7 +57,6 @@ public class DataPackWrap {
         return dataPack;
     }
 
-
 	/**  
 	 * 获取vin  
 	 * @return vin vin  
@@ -69,9 +65,6 @@ public class DataPackWrap {
 		return vin;
 	}
 
-
-
-
 	/**  
 	 * 设置vin  
 	 * @param vin vin  
@@ -79,7 +72,4 @@ public class DataPackWrap {
 	public void setVin(String vin) {
 		this.vin = vin;
 	}
-	
-	
-
 }

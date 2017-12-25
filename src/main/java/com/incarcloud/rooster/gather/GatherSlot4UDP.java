@@ -14,8 +14,14 @@ import org.slf4j.LoggerFactory;
  *
  */
 class GatherSlot4UDP extends GatherSlot{
+
+    /**
+     * Logger
+     */
     private static Logger s_logger = LoggerFactory.getLogger(GatherSlot4UDP.class);
+
     private static final int BACKLOG_COUNT = 1024;
+
     private int _port;
     private Channel _channel;
     private Bootstrap _bootstrap;
@@ -41,8 +47,7 @@ class GatherSlot4UDP extends GatherSlot{
     protected void start0(){
         ChannelFuture future = _bootstrap.bind(_port);
         _channel = future.channel();
-        
-        
+
         _bootstrap = null; // 可以释放掉了
         try {
             future.sync();
