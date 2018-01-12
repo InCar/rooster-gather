@@ -1,5 +1,5 @@
 group 'com.incarcloud'
-version '2.1.2-SNAPSHOT'
+version '2.1.16-SNAPSHOT'
 
 apply plugin: 'java'
 apply plugin: 'maven'
@@ -27,7 +27,7 @@ repositories {
 }
 
 dependencies {
-    compile ("com.incarcloud:rooster-shared-all:2.1.4-SNAPSHOT")
+    compile ("com.incarcloud:rooster-shared-all:2.1.16-SNAPSHOT")
 
     compile("org.springframework:spring-beans:4.3.12.RELEASE")
     compile("org.springframework:spring-context:4.3.12.RELEASE")

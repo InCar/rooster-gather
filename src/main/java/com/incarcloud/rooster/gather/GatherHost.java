@@ -6,6 +6,7 @@ import com.incarcloud.rooster.gather.remotecmd.device.DeviceConnection;
 import com.incarcloud.rooster.gather.remotecmd.device.DeviceConnectionCache;
 import com.incarcloud.rooster.gather.remotecmd.device.DeviceConnectionContainer;
 import com.incarcloud.rooster.mq.IBigMQ;
+import com.incarcloud.rooster.mq.IBigSuperMQ;
 import com.incarcloud.rooster.util.StringUtil;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -48,7 +49,7 @@ public class GatherHost {
     /**
      * 操作消息队列接口
      */
-    private IBigMQ bigMQ;
+    private IBigSuperMQ bigMQ;
 
     /**
      * 远程命令监听服务
@@ -69,6 +70,24 @@ public class GatherHost {
      * 是否已启动
      */
     private Boolean _bRunning = false;
+
+    /**
+     * bigMQ topic
+     * 上行-- DataPack TBOX消息
+     */
+    private String dataPackTopic ;
+
+    /**
+     * bigMQ topic
+     * 下行-- remoteTopic 下发TBOX
+     */
+    private String remoteTopic ;
+
+    /**
+     * bigMQ topic
+     * 上行-- feedBackTopic 回馈
+     */
+    private String feedBackTopic ;
 
     public GatherHost() {
         this("host" + Calendar.getInstance().getTimeInMillis());
@@ -221,11 +240,11 @@ public class GatherHost {
         return name;
     }
 
-    public IBigMQ getBigMQ() {
+    public IBigSuperMQ getBigMQ() {
         return bigMQ;
     }
 
-    public void setBigMQ(IBigMQ bigMQ) {
+    public void setBigMQ(IBigSuperMQ bigMQ) {
         this.bigMQ = bigMQ;
     }
 
@@ -272,5 +291,29 @@ public class GatherHost {
      */
     public void removeConnectionFromRemote(String vin){
         remoteRegister.removeConnection(vin);
+    }
+
+    public String getDataPackTopic() {
+        return dataPackTopic;
+    }
+
+    public void setDataPackTopic(String dataPackTopic) {
+        this.dataPackTopic = dataPackTopic;
+    }
+
+    public String getRemoteTopic() {
+        return remoteTopic;
+    }
+
+    public void setRemoteTopic(String remoteTopic) {
+        this.remoteTopic = remoteTopic;
+    }
+
+    public String getFeedBackTopic() {
+        return feedBackTopic;
+    }
+
+    public void setFeedBackTopic(String feedBackTopic) {
+        this.feedBackTopic = feedBackTopic;
     }
 }
