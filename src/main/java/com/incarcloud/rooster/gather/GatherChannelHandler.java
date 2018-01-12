@@ -3,6 +3,10 @@ package com.incarcloud.rooster.gather;
 import com.incarcloud.rooster.datapack.DataPack;
 import com.incarcloud.rooster.datapack.IDataParser;
 import com.incarcloud.rooster.gather.remotecmd.device.DeviceConnection;
+import com.incarcloud.rooster.gather.remotecmd.session.Session;
+import com.incarcloud.rooster.gather.remotecmd.session.SessionFactory;
+import com.incarcloud.rooster.mq.RemoteCmdFeedbackMsg;
+import com.incarcloud.rooster.util.GsonFactory;
 import com.incarcloud.rooster.util.StringUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
@@ -14,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.SocketAddress;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -80,11 +85,15 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
+        //TCP连接时，创建缓存信息
+        SessionFactory.getInstance().createSession(ctx);
         _buffer = ctx.alloc().buffer();
     }
 
     @Override
     public void channelUnregistered(ChannelHandlerContext ctx) throws Exception {
+        //断开清除连接缓存
+        SessionFactory.getInstance().cancelSession(ctx);
         _buffer.release();
         _buffer = null;
     }
@@ -125,19 +134,24 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
 
             s_logger.debug("MetaData: {}", getPackMetaData(listPacks.get(0), _parser));
 
-            for (DataPack pack : listPacks) {
-                Date now = new Date();
-                pack.setReceiveTime(now);//数据包的接收时间
-            }
-
             // 2、扔到host的消息队列
+            Date currentTime = Calendar.getInstance().getTime();
             for (DataPack pack : listPacks) {
+                // 填充接收时间
+                pack.setReceiveTime(currentTime);//数据包的接收时间
+
+                // 处理消息队列
                 DataPackWrap dpw = new DataPackWrap(channel, _parser, pack);
                 if (!StringUtil.isBlank(vin)) {
                     dpw.setVin(vin);
                 }
                 _slot.putToCacheQueue(dpw);
                 s_logger.debug("Put ({}) to queue ok!", pack);
+            }
+
+            //缓存deviceId - Channel 关系
+            if(!StringUtil.isBlank(deviceId)) {
+                SessionFactory.getInstance().createRelationSessionId(ctx, deviceId);
             }
 
         } catch (Exception e) {
