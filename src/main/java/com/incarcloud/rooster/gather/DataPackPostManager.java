@@ -1,6 +1,5 @@
 package com.incarcloud.rooster.gather;
 
-import com.google.gson.Gson;
 import com.incarcloud.rooster.datapack.DataPack;
 import com.incarcloud.rooster.datapack.ERespReason;
 import com.incarcloud.rooster.datapack.IDataParser;
@@ -9,7 +8,6 @@ import com.incarcloud.rooster.gather.remotecmd.session.SessionFactory;
 import com.incarcloud.rooster.mq.*;
 import com.incarcloud.rooster.util.GsonFactory;
 import com.incarcloud.rooster.util.StringUtil;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.channel.Channel;
@@ -21,7 +19,6 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -183,40 +180,59 @@ public class DataPackPostManager {
         }, period, period, TimeUnit.SECONDS);
 
 
+        /**
+         * 定时消费MQ消息
+         * 每秒定时处理，及时消费
+         */
         consumerExecutorService.scheduleAtFixedRate(new Runnable() {
             @Override
             public void run() {
-                IBigSuperMQ bigMQ = host.getBigMQ() ;
+                IBigMQ bigMQ = host.getBigMQ() ;
                 try {
-
+                    // 循环获取MQ消息
                     while (true) {
                         List<byte[]> mqMsgs = bigMQ.batchReceive(host.getRemoteTopic(),BATCH_GET_SIZE);
 
+                        //处理MQ消息逻辑----响应给TBOX
                         if (null != mqMsgs && mqMsgs.size() > 0){
                             for (byte[] mqMsg : mqMsgs){
-                                String json = new String(mqMsg);
-                                s_logger.info("remote msg :{}",json);
-                                RemoteCmdSendMsg remoteCmdSendMsg = GsonFactory.newInstance().createGson().fromJson(json, RemoteCmdSendMsg.class);
-                                String deviceId = remoteCmdSendMsg.getDeviceId() ;
-                                byte[] bytes = Base64.getDecoder().decode(remoteCmdSendMsg.getCmdString()) ;
-                                Integer packId = remoteCmdSendMsg.getPackId() ;
+                                try {
+                                    String json = new String(mqMsg);
+                                    s_logger.info("remote msg :{}",json);
+                                    RemoteCmdSendMsg remoteCmdSendMsg = GsonFactory.newInstance().createGson().fromJson(json, RemoteCmdSendMsg.class);
+                                    if (null == remoteCmdSendMsg)continue;
 
-                                String sessionId = SessionFactory.getInstance().getSessionId(deviceId) ;
-                                if (null != sessionId){
-                                    Session session = SessionFactory.getInstance().getSession(sessionId) ;
-                                    session.write(bytes).addListener(channelFuture->{
-                                        if (channelFuture.isSuccess()){
-                                            RemoteCmdFeedbackMsg feedbackMsg = new RemoteCmdFeedbackMsg(deviceId, packId, 1) ;
-                                            bigMQ.post(host.getFeedBackTopic(),GsonFactory.newInstance().createGson().toJson(feedbackMsg).getBytes()) ;
-                                        }else{
-                                            RemoteCmdFeedbackMsg feedbackMsg = new RemoteCmdFeedbackMsg(deviceId, packId, 0) ;
-                                            bigMQ.post(host.getFeedBackTopic(),GsonFactory.newInstance().createGson().toJson(feedbackMsg).getBytes()) ;
+                                    String deviceId = remoteCmdSendMsg.getDeviceId() ;
+                                    if (StringUtil.isBlank(deviceId))continue;
+
+                                    byte[] bytes = Base64.getDecoder().decode(remoteCmdSendMsg.getCmdString()) ;
+                                    Integer packId = remoteCmdSendMsg.getPackId() ;
+
+                                    //根据绑定的设备ID获取Session
+                                    String sessionId = SessionFactory.getInstance().getSessionId(deviceId) ;
+                                    if (null != sessionId){
+                                        // sessionId 与 Session 对应，如果sessionId 存在，Session不存在，说明有异常
+                                        Session session = SessionFactory.getInstance().getSession(sessionId) ;
+                                        if (null == session) {
+                                            s_logger.error("Session is nonexistence ：deviceId:{},sessionId:{}",deviceId,sessionId);
+                                            continue;
                                         }
-                                    }) ;
+                                        session.write(bytes).addListener(channelFuture->{
+                                            if (channelFuture.isSuccess()){
+                                                RemoteCmdFeedbackMsg feedbackMsg = new RemoteCmdFeedbackMsg(deviceId, packId, 1) ;
+                                                bigMQ.post(host.getFeedBackTopic(),GsonFactory.newInstance().createGson().toJson(feedbackMsg).getBytes()) ;
+                                            }else{
+                                                RemoteCmdFeedbackMsg feedbackMsg = new RemoteCmdFeedbackMsg(deviceId, packId, 0) ;
+                                                bigMQ.post(host.getFeedBackTopic(),GsonFactory.newInstance().createGson().toJson(feedbackMsg).getBytes()) ;
+                                            }
+                                        }) ;
+                                    }
+                                }catch (Exception e){
+                                    s_logger.error("remote message err : {}",new String(mqMsg));
                                 }
                             }
                         }
-
+                        // 当查询出来的记录条数 小于 查询量，不再去循环查询
                         if (null == mqMsgs || mqMsgs.size() < BATCH_GET_SIZE){
                             break;
                         }
@@ -245,9 +261,9 @@ public class DataPackPostManager {
          */
         private static final int BATCH_POST_SIZE = 16;
 
-        private IBigSuperMQ iBigMQ;
+        private IBigMQ iBigMQ;
 
-        public QueueConsumerThread(IBigSuperMQ bigMQ) {
+        public QueueConsumerThread(IBigMQ bigMQ) {
             if (null == bigMQ) {
                 throw new IllegalArgumentException();
             }
@@ -428,40 +444,5 @@ public class DataPackPostManager {
             }
         }
 
-
-        /**
-         * 发送消息给TBOX
-         * TODO 判断逻辑完善
-         */
-        private void feedBackMsg(IBigSuperMQ bigMQ,String remotTopic,String feedbackTopic){
-            try {
-                List<byte[]> mqMsgs = bigMQ.batchReceive(remotTopic,BATCH_POST_SIZE) ;
-                if (null != mqMsgs && mqMsgs.size() > 0){
-                    for (byte[] mqMsg : mqMsgs){
-                        String json = new String(mqMsg);
-                        RemoteCmdSendMsg remoteCmdSendMsg = GsonFactory.newInstance().createGson().fromJson(json, RemoteCmdSendMsg.class);
-                        String deviceId = remoteCmdSendMsg.getDeviceId() ;
-                        byte[] bytes = Base64.getDecoder().decode(remoteCmdSendMsg.getCmdString()) ;
-                        Integer packId = remoteCmdSendMsg.getPackId() ;
-
-                        String sessionId = SessionFactory.getInstance().getSessionId(deviceId) ;
-                        if (null != sessionId){
-                            Session session = SessionFactory.getInstance().getSession(sessionId) ;
-                            session.write(bytes).addListener(channelFuture->{
-                                if (channelFuture.isSuccess()){
-                                    RemoteCmdFeedbackMsg feedbackMsg = new RemoteCmdFeedbackMsg(deviceId, packId, 1) ;
-                                    bigMQ.post(feedbackTopic,GsonFactory.newInstance().createGson().toJson(feedbackMsg).getBytes()) ;
-                                }else{
-                                    RemoteCmdFeedbackMsg feedbackMsg = new RemoteCmdFeedbackMsg(deviceId, packId, 0) ;
-                                    bigMQ.post(feedbackTopic,GsonFactory.newInstance().createGson().toJson(feedbackMsg).getBytes()) ;
-                                }
-                            }) ;
-                        }
-                    }
-                }
-            }catch (Exception e){
-                System.out.println("No Consumer!!!!!!!!!");
-            }
-        }
     }
 }

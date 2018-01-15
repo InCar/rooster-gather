@@ -6,7 +6,6 @@ import com.incarcloud.rooster.gather.remotecmd.device.DeviceConnection;
 import com.incarcloud.rooster.gather.remotecmd.device.DeviceConnectionCache;
 import com.incarcloud.rooster.gather.remotecmd.device.DeviceConnectionContainer;
 import com.incarcloud.rooster.mq.IBigMQ;
-import com.incarcloud.rooster.mq.IBigSuperMQ;
 import com.incarcloud.rooster.util.StringUtil;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -49,7 +48,7 @@ public class GatherHost {
     /**
      * 操作消息队列接口
      */
-    private IBigSuperMQ bigMQ;
+    private IBigMQ bigMQ;
 
     /**
      * 远程命令监听服务
@@ -240,11 +239,11 @@ public class GatherHost {
         return name;
     }
 
-    public IBigSuperMQ getBigMQ() {
+    public IBigMQ getBigMQ() {
         return bigMQ;
     }
 
-    public void setBigMQ(IBigSuperMQ bigMQ) {
+    public void setBigMQ(IBigMQ bigMQ) {
         this.bigMQ = bigMQ;
     }
 
