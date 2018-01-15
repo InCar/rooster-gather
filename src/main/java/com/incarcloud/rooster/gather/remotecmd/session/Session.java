@@ -31,7 +31,7 @@ public class Session {
                 if (channelFuture.isSuccess()) {
                     logger.info("send msg Success : {}" , new String(buf));
                 }else{
-                    logger.error("send msg Fail : {}" , new String(buf));
+                    logger.info("send msg Fail : {}" , new String(buf));
                 }
             });
         } else {
