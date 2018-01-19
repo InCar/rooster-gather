@@ -210,18 +210,23 @@ public class DataPackPostManager {
 
                                     //根据绑定的设备ID获取Session
                                     String sessionId = SessionFactory.getInstance().getSessionId(deviceId) ;
+
+                                    s_logger.info("sessionId :{}",sessionId);
                                     if (null != sessionId){
                                         // sessionId 与 Session 对应，如果sessionId 存在，Session不存在，说明有异常
                                         Session session = SessionFactory.getInstance().getSession(sessionId) ;
+                                        s_logger.info("session :{}",session);
                                         if (null == session) {
                                             s_logger.error("Session is nonexistence ：deviceId:{},sessionId:{}",deviceId,sessionId);
                                             continue;
                                         }
                                         session.write(bytes).addListener(channelFuture->{
                                             if (channelFuture.isSuccess()){
+                                                s_logger.info("send msg to T-Box Success :deviceId:{},bytes:{}",deviceId,new String(bytes));
                                                 RemoteCmdFeedbackMsg feedbackMsg = new RemoteCmdFeedbackMsg(deviceId, packId, 1) ;
                                                 bigMQ.post(host.getFeedBackTopic(),GsonFactory.newInstance().createGson().toJson(feedbackMsg).getBytes()) ;
                                             }else{
+                                                s_logger.info("send msg to T-Box Error :deviceId:{},bytes:{}",deviceId,new String(bytes));
                                                 RemoteCmdFeedbackMsg feedbackMsg = new RemoteCmdFeedbackMsg(deviceId, packId, 0) ;
                                                 bigMQ.post(host.getFeedBackTopic(),GsonFactory.newInstance().createGson().toJson(feedbackMsg).getBytes()) ;
                                             }

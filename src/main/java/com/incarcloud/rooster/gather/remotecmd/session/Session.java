@@ -5,6 +5,7 @@ import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.util.ReferenceCountUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,6 +34,7 @@ public class Session {
                 }else{
                     logger.info("send msg Fail : {}" , new String(buf));
                 }
+                ReferenceCountUtil.release(byteBuf);
             });
         } else {
             logger.error("send msg error!!!");
