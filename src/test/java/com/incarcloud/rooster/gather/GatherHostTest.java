@@ -1,12 +1,16 @@
 package com.incarcloud.rooster.gather;
 
-import org.junit.*;
+import org.junit.Ignore;
+import org.junit.Test;
 
-import java.net.Socket;
-
+/**
+ * GatherHostTest
+ */
 public class GatherHostTest {
-//    @Test
-    public void TCPPortTest() throws Exception{
+
+    @Test
+    @Ignore
+    public void TCPPortTest() throws Exception {
         final int PORT = 7721;
         // start host
         GatherHost host = new GatherHost();
