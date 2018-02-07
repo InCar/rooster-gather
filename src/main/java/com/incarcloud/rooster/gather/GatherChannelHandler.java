@@ -3,17 +3,14 @@ package com.incarcloud.rooster.gather;
 import com.incarcloud.rooster.datapack.DataPack;
 import com.incarcloud.rooster.datapack.IDataParser;
 import com.incarcloud.rooster.gather.remotecmd.device.DeviceConnection;
-import com.incarcloud.rooster.gather.remotecmd.session.Session;
 import com.incarcloud.rooster.gather.remotecmd.session.SessionFactory;
-import com.incarcloud.rooster.mq.RemoteCmdFeedbackMsg;
-import com.incarcloud.rooster.util.GsonFactory;
-import com.incarcloud.rooster.util.StringUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -124,7 +121,7 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
             }
 
             //注册设备会话
-            if (StringUtil.isBlank(deviceId) && StringUtil.isBlank(vin)) {//已注册就不用再次注册
+            if (StringUtils.isBlank(deviceId) && StringUtils.isBlank(vin)) {//已注册就不用再次注册
                 Map<String, Object> metaData = getPackMetaData(listPacks.get(0), _parser);
                 registerConnection(metaData, channel);
 
@@ -142,7 +139,7 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
 
                 // 处理消息队列
                 DataPackWrap dpw = new DataPackWrap(channel, _parser, pack);
-                if (!StringUtil.isBlank(vin)) {
+                if (!StringUtils.isBlank(vin)) {
                     dpw.setVin(vin);
                 }
                 _slot.putToCacheQueue(dpw);
@@ -150,7 +147,7 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
             }
 
             //缓存deviceId - Channel 关系
-            if(!StringUtil.isBlank(deviceId)) {
+            if(!StringUtils.isBlank(deviceId)) {
                 SessionFactory.getInstance().createRelationSessionId(ctx, deviceId);
             }
 
@@ -202,9 +199,9 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
 
         s_logger.debug("registerConnection vin :" + vin0);
 
-        if (StringUtil.isBlank(vin0)) {
+        if (StringUtils.isBlank(vin0)) {
             String deviceId = (String) metaData.get("deviceId");
-            if (StringUtil.isBlank(deviceId)) {
+            if (StringUtils.isBlank(deviceId)) {
                 s_logger.error("VIN or deviceId is null !!!");
                 return;
             }

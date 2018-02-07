@@ -32,14 +32,10 @@ public class NettyRestfulCommandServer extends  AbstractRestfulCommandServer{
     private EventLoopGroup workerGroup = new NioEventLoopGroup();
     private Channel _channel;
 
-
-
-
     public NettyRestfulCommandServer(GatherHost host,int port){
         super(port);
         this.host = host;
     }
-
 
     @Override
     public String getUrl() throws UnknownHostException {

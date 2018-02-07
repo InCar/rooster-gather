@@ -7,10 +7,10 @@ import com.incarcloud.rooster.gather.remotecmd.session.Session;
 import com.incarcloud.rooster.gather.remotecmd.session.SessionFactory;
 import com.incarcloud.rooster.mq.*;
 import com.incarcloud.rooster.util.GsonFactory;
-import com.incarcloud.rooster.util.StringUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.channel.Channel;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -203,7 +203,7 @@ public class DataPackPostManager {
                                     if (null == remoteCmdSendMsg)continue;
 
                                     String deviceId = remoteCmdSendMsg.getDeviceId() ;
-                                    if (StringUtil.isBlank(deviceId))continue;
+                                    if (StringUtils.isBlank(deviceId))continue;
 
                                     byte[] bytes = Base64.getDecoder().decode(remoteCmdSendMsg.getCmdString()) ;
                                     Integer packId = remoteCmdSendMsg.getPackId() ;
@@ -342,7 +342,7 @@ public class DataPackPostManager {
                     //System.out.println("****"+ DataTool.bytes2hex(dp.getDataBytes()));
                 	//将vin码发送过去
                 	String gatherMark = dp.getMark();
-                	if(!StringUtil.isBlank(packWrap.getVin())){
+                	if(!StringUtils.isBlank(packWrap.getVin())){
                 		gatherMark += "|" + packWrap.getVin();
                 	}
                 	

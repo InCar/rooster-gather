@@ -6,7 +6,6 @@ import com.google.gson.Gson;
 import com.incarcloud.rooster.gather.cmd.CommandServerRespCode;
 import com.incarcloud.rooster.gather.cmd.ReqContent;
 import com.incarcloud.rooster.gather.cmd.RespContent;
-import com.incarcloud.rooster.util.StringUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFutureListener;
@@ -15,6 +14,7 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.codec.http.*;
 import io.netty.util.AsciiString;
 import io.netty.util.CharsetUtil;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -85,7 +85,7 @@ public class HttpRestfulHandler extends ChannelInboundHandlerAdapter {
 
         if ("/rest".equals(uri)) {
             String  reqContent = getRequestContent(req);
-            if(StringUtil.isBlank(reqContent)){//
+            if(StringUtils.isBlank(reqContent)){//
                 resp.setCode(CommandServerRespCode.OTHER_ERROR);
                 resp.setDescInfo("no json data ");
                 responseJson(ctx, req, gson.toJson(resp));

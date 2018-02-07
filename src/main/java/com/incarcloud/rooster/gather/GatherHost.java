@@ -6,9 +6,9 @@ import com.incarcloud.rooster.gather.remotecmd.device.DeviceConnection;
 import com.incarcloud.rooster.gather.remotecmd.device.DeviceConnectionCache;
 import com.incarcloud.rooster.gather.remotecmd.device.DeviceConnectionContainer;
 import com.incarcloud.rooster.mq.IBigMQ;
-import com.incarcloud.rooster.util.StringUtil;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -189,7 +189,7 @@ public class GatherHost {
      * @param slotsConf 采集槽配置,格式:   解析器名:通讯协议:监听端口,解析器名:通讯协议:监听端口,......,解析器名:通讯协议:监听端口
      */
     public void addSlot(String slotsConf) throws Exception{
-        if(StringUtil.isBlank(slotsConf)){
+        if(StringUtils.isBlank(slotsConf)){
             throw new IllegalArgumentException();
         }
 

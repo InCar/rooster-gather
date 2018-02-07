@@ -5,8 +5,8 @@ package com.incarcloud.rooster.gather.remotecmd.server;/**
 import com.incarcloud.rooster.gather.cmd.*;
 import com.incarcloud.rooster.gather.remotecmd.device.DeviceConnection;
 import com.incarcloud.rooster.gather.remotecmd.device.DeviceConnectionContainer;
-import com.incarcloud.rooster.util.StringUtil;
 import io.netty.buffer.ByteBuf;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,7 +33,7 @@ public class CommandService {
      */
     public RespContent executeCommand(ReqContent req) {
         RespContent resp = new RespContent();
-        if (null == req || null == req.getCmdType() || StringUtil.isBlank(req.getVin())) {
+        if (null == req || null == req.getCmdType() || StringUtils.isBlank(req.getVin())) {
             resp.setCode(CommandServerRespCode.REQ_PARAM_ERROR);
             return resp;
         }

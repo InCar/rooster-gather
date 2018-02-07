@@ -1,7 +1,7 @@
 package com.incarcloud.rooster.gather.remotecmd.device;
 
-import com.incarcloud.rooster.util.StringUtil;
 import io.netty.channel.Channel;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * 设备连接
@@ -27,7 +27,7 @@ public class DeviceConnection {
 
 
 	public DeviceConnection(String vin, Channel channel,String protocol) {
-		if(StringUtil.isBlank(vin) || null == channel || StringUtil.isBlank(protocol)){
+		if(StringUtils.isBlank(vin) || null == channel || StringUtils.isBlank(protocol)){
 			throw new IllegalArgumentException();
 		}
 
