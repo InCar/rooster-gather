@@ -1,11 +1,8 @@
 package com.incarcloud.rooster.gather.remotecmd.session;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.util.ReferenceCountUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,16 +23,13 @@ public class Session {
 
     public ChannelFuture write(final byte[] buf) throws Exception {
         if (channelHandlerContext.channel().isOpen() && channelHandlerContext.channel().isActive() && channelHandlerContext.channel().isWritable()) {
-            ByteBuf byteBuf = ByteBufAllocator.DEFAULT.buffer();
-            byteBuf.writeBytes(buf);
-            return channelHandlerContext.channel().writeAndFlush(byteBuf).addListener((ChannelFutureListener) channelFuture -> {
-                if (channelFuture.isSuccess()) {
-                    logger.info("send msg Success : {}" , new String(buf));
-                }else{
-                    logger.info("send msg Fail : {}" , new String(buf));
-                }
-                ReferenceCountUtil.release(byteBuf);
-            });
+            ChannelFuture channelFuture = channelHandlerContext.channel().writeAndFlush(Unpooled.copiedBuffer(buf)).sync();
+            if(channelFuture.isSuccess()) {
+                logger.info("send msg Success : {}" , new String(buf));
+            } else {
+                logger.info("send msg Fail : {}" , new String(buf));
+            }
+            return channelFuture;
         } else {
             logger.error("send msg error!!!");
             throw new Exception(String.format("send msg error!!!", this.getSessionId(), buf));

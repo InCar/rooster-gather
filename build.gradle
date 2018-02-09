@@ -1,5 +1,5 @@
 group 'com.incarcloud'
-version '2.1.18-SNAPSHOT'
+version '2.1.19.5-SNAPSHOT'
 
 allprojects {
     apply plugin: 'java'
@@ -84,6 +84,16 @@ uploadArchives {
             }
         }
     }
+}
+
+task sourcesJar(type: Jar) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+artifacts {
+    archives jar
+    archives sourcesJar
 }
 
 defaultTasks "assemble"

@@ -2,7 +2,6 @@ package com.incarcloud.rooster.gather;
 
 import com.incarcloud.rooster.datapack.DataPack;
 import com.incarcloud.rooster.datapack.IDataParser;
-import com.incarcloud.rooster.gather.remotecmd.device.DeviceConnection;
 import com.incarcloud.rooster.gather.remotecmd.session.SessionFactory;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
@@ -147,7 +146,7 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
             }
 
             //缓存deviceId - Channel 关系
-            if(!StringUtils.isBlank(deviceId)) {
+            if (!StringUtils.isBlank(deviceId)) {
                 SessionFactory.getInstance().createRelationSessionId(ctx, deviceId);
             }
 
@@ -209,24 +208,6 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
             //没有vin码就用 DEVICEID+#+设备号  代替
             vin0 = "DEVICEID#" + deviceId;
         }
-
-        //1.缓存连接
-        DeviceConnection conn = new DeviceConnection(vin0, channel, protocol);
-        _slot.getDeviceConnectionContainer().addDeviceConnection(conn);
-
-        //2.远程注册,开线程避免阻塞
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    _slot.registerConnectionToRemote(conn);
-                    s_logger.debug("success register device connection to remote,vin=" + vin);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    s_logger.error(e.getMessage());
-                }
-            }
-        }).start();
 
     }
 
