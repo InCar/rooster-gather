@@ -1,18 +1,13 @@
 package com.incarcloud.rooster.gather;
 
-import com.incarcloud.rooster.gather.cmd.device.DeviceConnectionRemoteRegister;
 import com.incarcloud.rooster.gather.cmd.server.CommandServer;
-import com.incarcloud.rooster.gather.remotecmd.device.DeviceConnection;
-import com.incarcloud.rooster.gather.remotecmd.device.DeviceConnectionCache;
-import com.incarcloud.rooster.gather.remotecmd.device.DeviceConnectionContainer;
 import com.incarcloud.rooster.mq.IBigMQ;
-import com.incarcloud.rooster.util.StringUtil;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Calendar;
 
@@ -54,16 +49,6 @@ public class GatherHost {
      * 远程命令监听服务
      */
     private CommandServer cmdServer;
-
-    /**
-     * 向远程注册已连接设备
-     */
-    private DeviceConnectionRemoteRegister remoteRegister;
-    /**
-
-     * 设备连接容器，缓存本host上所有的连接设备
-     */
-    private DeviceConnectionContainer container = new DeviceConnectionCache();
 
     /**
      * 是否已启动
@@ -189,7 +174,7 @@ public class GatherHost {
      * @param slotsConf 采集槽配置,格式:   解析器名:通讯协议:监听端口,解析器名:通讯协议:监听端口,......,解析器名:通讯协议:监听端口
      */
     public void addSlot(String slotsConf) throws Exception{
-        if(StringUtil.isBlank(slotsConf)){
+        if(StringUtils.isBlank(slotsConf)){
             throw new IllegalArgumentException();
         }
 
@@ -260,36 +245,6 @@ public class GatherHost {
         s_logger.debug("putToCacheQueue:"+packWrap);
 
         dataPackPostManager.add(packWrap);
-    }
-
-    /**
-     * 获取缓存设备连接的容器
-     * @return
-     */
-    public DeviceConnectionContainer getContainer() {
-        return container;
-    }
-
-    public void setRemoteRegister(DeviceConnectionRemoteRegister remoteRegister) {
-        this.remoteRegister = remoteRegister;
-    }
-
-    /**
-     * 注册连接的设备
-     * @param conn
-     */
-    public void registerConnectionToRemote(DeviceConnection conn)throws UnknownHostException {
-
-        String cmdServerUrl = cmdServer.getUrl();
-        remoteRegister.registerConnection(conn.getVin(),cmdServerUrl);
-    }
-
-    /**
-     * 从远程移除设备连接信息
-     * @param vin
-     */
-    public void removeConnectionFromRemote(String vin){
-        remoteRegister.removeConnection(vin);
     }
 
     public String getDataPackTopic() {
