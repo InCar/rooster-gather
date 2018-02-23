@@ -1,6 +1,6 @@
 package com.incarcloud.rooster.gather;
 
-import com.incarcloud.rooster.gather.cmd.server.CommandServer;
+import com.incarcloud.rooster.cache.ICacheManager;
 import com.incarcloud.rooster.mq.IBigMQ;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -46,9 +46,9 @@ public class GatherHost {
     private IBigMQ bigMQ;
 
     /**
-     * 远程命令监听服务
+     * 缓存管理器接口
      */
-    private CommandServer cmdServer;
+    private ICacheManager cacheManager;
 
     /**
      * 是否已启动
@@ -94,10 +94,13 @@ public class GatherHost {
      * @throws Exception
      */
     public synchronized void start() throws Exception {
-        if (_bRunning)
+        if (_bRunning) {
             return;
+        }
 
-        dataPackPostManager.start();
+        if(null != dataPackPostManager) {
+            dataPackPostManager.start();
+        }
 
         if (null == _slots || 0 == _slots.size()) {
             throw new RuntimeException("no slot!!");
@@ -106,10 +109,6 @@ public class GatherHost {
         //启动所有采集槽
         for (GatherSlot slot : _slots) {
             slot.start();
-        }
-
-        if(null != cmdServer){
-            cmdServer.start();
         }
 
         _bRunning = true;
@@ -130,13 +129,12 @@ public class GatherHost {
             slot.stop();
         }
 
-        dataPackPostManager.stop();
-        if (null != bigMQ) {
-            bigMQ.close();
+        if(null != dataPackPostManager) {
+            dataPackPostManager.stop();
         }
 
-        if(null != cmdServer){
-            cmdServer.stop();
+        if (null != bigMQ) {
+            bigMQ.close();
         }
         _bRunning = false;
     }
@@ -203,10 +201,6 @@ public class GatherHost {
         }
     }
 
-    public void addCommandServer(CommandServer cmdServer){
-        this.cmdServer = cmdServer;
-    }
-
     EventLoopGroup getBossGroup() {
         return _bossGroup;
     }
@@ -230,6 +224,14 @@ public class GatherHost {
 
     public void setBigMQ(IBigMQ bigMQ) {
         this.bigMQ = bigMQ;
+    }
+
+    public ICacheManager getCacheManager() {
+        return cacheManager;
+    }
+
+    public void setCacheManager(ICacheManager cacheManager) {
+        this.cacheManager = cacheManager;
     }
 
     /**

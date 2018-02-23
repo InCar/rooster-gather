@@ -1,11 +1,13 @@
 package com.incarcloud.rooster.gather;
 
+import com.incarcloud.rooster.cache.ICacheManager;
 import com.incarcloud.rooster.datapack.DataPack;
 import com.incarcloud.rooster.datapack.ERespReason;
 import com.incarcloud.rooster.datapack.IDataParser;
 import com.incarcloud.rooster.gather.remotecmd.session.Session;
 import com.incarcloud.rooster.gather.remotecmd.session.SessionFactory;
 import com.incarcloud.rooster.mq.*;
+import com.incarcloud.rooster.share.Constants;
 import com.incarcloud.rooster.util.GsonFactory;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
@@ -155,7 +157,7 @@ public class DataPackPostManager {
      */
     public void start() {
         for (int i = 0; i < threadCount; i++) {
-            new Thread(threadGroup, new QueueConsumerThread(host.getBigMQ())).start();
+            new Thread(threadGroup, new QueueConsumerThread(host.getBigMQ(), host.getCacheManager())).start();
         }
 
         //间隔一定时间统计队列状况
@@ -266,14 +268,17 @@ public class DataPackPostManager {
          */
         private static final int BATCH_POST_SIZE = 16;
 
-        private IBigMQ iBigMQ;
+        private IBigMQ bigMQ;
 
-        public QueueConsumerThread(IBigMQ bigMQ) {
-            if (null == bigMQ) {
+        private ICacheManager cacheManager;
+
+        public QueueConsumerThread(IBigMQ bigMQ, ICacheManager cacheManager) {
+            if (null == bigMQ || null == cacheManager) {
                 throw new IllegalArgumentException();
             }
 
-            this.iBigMQ = bigMQ;
+            this.bigMQ = bigMQ;
+            this.cacheManager = cacheManager;
         }
 
         @Override
@@ -338,14 +343,14 @@ public class DataPackPostManager {
             for (DataPackWrap packWrap : packWrapBatch) {
                 DataPack dp = packWrap.getDataPack();
                 try {
-
-                    //System.out.println("****"+ DataTool.bytes2hex(dp.getDataBytes()));
-                	//将vin码发送过去
+                	// 根据deviceId回复设备数据
                 	String gatherMark = dp.getMark();
-                	if(!StringUtils.isBlank(packWrap.getVin())){
-                		gatherMark += "|" + packWrap.getVin();
+                	if(null != packWrap && null != packWrap.getMetaData()){
+                        String deviceId = (String) packWrap.getMetaData().get(Constants.MetaDataMapKey.DEVICE_ID);
+                		gatherMark += "|" + deviceId;
                 	}
-                	
+
+                	// 构建MQ消息体
                     MQMsg mqMsg = new MQMsg(gatherMark, dp.serializeToBytes());
 
                     msgList.add(GsonFactory.newInstance().createGson().toJson(mqMsg).getBytes());
@@ -354,7 +359,7 @@ public class DataPackPostManager {
                 }
             }
 
-            List<MqSendResult> resultList = iBigMQ.post(host.getDataPackTopic(),msgList);
+            List<MqSendResult> resultList = bigMQ.post(host.getDataPackTopic(),msgList);
 
             s_logger.debug("resultList:"+resultList.size());
 
@@ -414,9 +419,11 @@ public class DataPackPostManager {
             try {
                 DataPack dp = packWrap.getDataPack();
                 MQMsg mqMsg = new MQMsg(dp.getMark(), dp.serializeToBytes());
-                s_logger.debug("&&&&&&" + mqMsg);
+                s_logger.debug("-->" + mqMsg);
+                // TODO
+                //s_logger.error(dataParser.getMetaData(dataPack.get));
 
-                MqSendResult sendResult = iBigMQ.post(host.getDataPackTopic(),GsonFactory.newInstance().createGson().toJson(mqMsg).getBytes()) ;
+                MqSendResult sendResult = bigMQ.post(host.getDataPackTopic(),GsonFactory.newInstance().createGson().toJson(mqMsg).getBytes()) ;
 
                 if (null == sendResult.getException()) {// 正常返回
                     s_logger.debug("success send to MQ:" + sendResult.getData());
@@ -431,7 +438,7 @@ public class DataPackPostManager {
                 } else {
                     s_logger.error("failed send to MQ:" + sendResult.getException().getMessage());
                     ByteBuf resp = dataParser.createResponse(dataPack, ERespReason.ERROR);
-                    s_logger.debug("failed send resp:"+ByteBufUtil.hexDump(resp));
+                    s_logger.error("failed send resp:"+ByteBufUtil.hexDump(resp));
 
                     if (null != resp) {//需要回应设备
                         channel.writeAndFlush(resp);

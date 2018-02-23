@@ -1,5 +1,5 @@
 group 'com.incarcloud'
-version '2.1.19.5-SNAPSHOT'
+version '2.1.19.6-SNAPSHOT'
 
 allprojects {
     apply plugin: 'java'
@@ -32,9 +32,8 @@ allprojects {
         }
     }
 
-    /*configurations.all {
-        resolutionStrategy.cacheChangingModulesFor 10, 'minutes'
-        resolutionStrategy.cacheDynamicVersionsFor 10*60, 'seconds'
+    /*configurations {
+        compile.resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
     }*/
 
     compileJava{

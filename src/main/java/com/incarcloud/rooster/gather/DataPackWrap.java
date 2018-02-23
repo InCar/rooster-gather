@@ -4,15 +4,13 @@ import com.incarcloud.rooster.datapack.DataPack;
 import com.incarcloud.rooster.datapack.IDataParser;
 import io.netty.channel.Channel;
 
+import java.util.Map;
+
 /**
  * Created by fanbeibei on 2017Da/6/15.
  */
 public class DataPackWrap {
 
-	/**
-	 * vin码
-	 */
-	private String vin;
     /**
      * 会话通道
      */
@@ -25,13 +23,20 @@ public class DataPackWrap {
      * 数据包
      */
     private DataPack dataPack;
+    /**
+     * 设备报文Meta数据
+     */
+    private Map<String, Object> metaData;
 
     /**
+     * 构造函数
+     *
      * @param channel    会话通道
      * @param dataParser 数据转换器
      * @param dataPack   数据包
+     * @param metaData   设备报文Meta数据
      */
-    public DataPackWrap(Channel channel, IDataParser dataParser, DataPack dataPack) {
+    public DataPackWrap(Channel channel, IDataParser dataParser, DataPack dataPack, Map<String, Object> metaData) {
         if (null == channel || null == dataParser || null == dataPack) {
             throw new IllegalArgumentException();
         }
@@ -39,6 +44,7 @@ public class DataPackWrap {
         this.channel = channel;
         this.dataParser = dataParser;
         this.dataPack = dataPack;
+        this.metaData = metaData;
     }
 
     public void destroy() {
@@ -57,19 +63,11 @@ public class DataPackWrap {
         return dataPack;
     }
 
-	/**  
-	 * 获取vin  
-	 * @return vin vin  
-	 */
-	public String getVin() {
-		return vin;
-	}
+    public Map<String, Object> getMetaData() {
+        return metaData;
+    }
 
-	/**  
-	 * 设置vin  
-	 * @param vin vin  
-	 */
-	public void setVin(String vin) {
-		this.vin = vin;
-	}
+    public void setMetaData(Map<String, Object> metaData) {
+        this.metaData = metaData;
+    }
 }

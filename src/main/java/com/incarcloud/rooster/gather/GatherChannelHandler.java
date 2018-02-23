@@ -3,6 +3,7 @@ package com.incarcloud.rooster.gather;
 import com.incarcloud.rooster.datapack.DataPack;
 import com.incarcloud.rooster.datapack.IDataParser;
 import com.incarcloud.rooster.gather.remotecmd.session.SessionFactory;
+import com.incarcloud.rooster.share.Constants;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
@@ -32,15 +33,9 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
     private static Logger s_logger = LoggerFactory.getLogger(GatherChannelHandler.class);
 
     /**
-     * vin 码
+     * 设备报文Meta数据
      */
-    private String vin;
-
-    /**
-     * 设备ID
-     */
-    private String deviceId;
-
+    private Map<String, Object> metaData;
 
     /**
      * 所属的采集槽
@@ -109,7 +104,7 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
         List<DataPack> listPacks = null;
         try {
 
-            // 1、解析包
+            // 1、解析包(分解，校验，解密)
             listPacks = _parser.extract(buf);
 
             s_logger.debug("DataPackList Size: {}", listPacks.size());
@@ -119,33 +114,26 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
                 return;
             }
 
-            //注册设备会话
-            if (StringUtils.isBlank(deviceId) && StringUtils.isBlank(vin)) {//已注册就不用再次注册
-                Map<String, Object> metaData = getPackMetaData(listPacks.get(0), _parser);
-                registerConnection(metaData, channel);
+            // 2、获得设备报文Meta数据
+            metaData = getPackMetaData(listPacks.get(0), _parser);
+            s_logger.debug("MetaData: {}", metaData);
 
-                vin = (String) metaData.get("vin");
-                deviceId = (String) metaData.get("deviceId");
-            }
-
-            s_logger.debug("MetaData: {}", getPackMetaData(listPacks.get(0), _parser));
-
-            // 2、扔到host的消息队列
+            // 3、扔到host的消息队列
             Date currentTime = Calendar.getInstance().getTime();
             for (DataPack pack : listPacks) {
                 // 填充接收时间
                 pack.setReceiveTime(currentTime);//数据包的接收时间
 
                 // 处理消息队列
-                DataPackWrap dpw = new DataPackWrap(channel, _parser, pack);
-                if (!StringUtils.isBlank(vin)) {
-                    dpw.setVin(vin);
-                }
+                DataPackWrap dpw = new DataPackWrap(channel, _parser, pack, metaData);
+
+                // 放到缓存队列
                 _slot.putToCacheQueue(dpw);
                 s_logger.debug("Put ({}) to queue ok!", pack);
             }
 
-            //缓存deviceId - Channel 关系
+            //　4、缓存deviceId - Channel 关系
+            String deviceId = (String) metaData.get(Constants.MetaDataMapKey.DEVICE_ID);
             if (!StringUtils.isBlank(deviceId)) {
                 SessionFactory.getInstance().createRelationSessionId(ctx, deviceId);
             }
@@ -168,62 +156,27 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
     /**
      * 客户端主动断开
      *
-     * @param ctx
+     * @param ctx　网络通道
      * @throws Exception
      */
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-
-        SocketAddress devAddr = ctx.channel().remoteAddress();
-        s_logger.info("Device({}) disconnected!", devAddr);
-
-        /*if (null != vin) {//释放掉缓存的连接
-            _slot.getDeviceConnectionContainer().removeDeviceConnection(vin);
-            _slot.removeConnectionFromRemote(vin);
-            s_logger.debug("success remove device connection from remote,vin="+vin);
-        }*/
-    }
-
-
-    /**
-     * 注册设备连接,便于下发命令
-     *
-     * @param metaData 包含车辆 vin/设备号/协议
-     * @param channel
-     */
-    private void registerConnection(Map<String, Object> metaData, Channel channel) {
-        String vin0 = (String) metaData.get("vin");
-        String protocol = (String) metaData.get("protocol");
-
-
-        s_logger.debug("registerConnection vin :" + vin0);
-
-        if (StringUtils.isBlank(vin0)) {
-            String deviceId = (String) metaData.get("deviceId");
-            if (StringUtils.isBlank(deviceId)) {
-                s_logger.error("VIN or deviceId is null !!!");
-                return;
-            }
-
-            //没有vin码就用 DEVICEID+#+设备号  代替
-            vin0 = "DEVICEID#" + deviceId;
-        }
-
+        // 打印断开连接信息
+        s_logger.info("Device({}) disconnected!", ctx.channel().remoteAddress());
     }
 
     /**
      * 获取vin/设备号/协议
      *
-     * @param dataPack
-     * @param _parser
+     * @param dataPack 数据包
+     * @param parser 解析器
      * @return
      */
-    private Map<String, Object> getPackMetaData(DataPack dataPack, IDataParser _parser) {
-
-        byte[] dataByte = dataPack.getDataBytes();
-        ByteBuf buf = Unpooled.buffer(dataByte.length);
-        buf.writeBytes(dataByte);
-
-        return _parser.getMetaData(buf);
+    private Map<String, Object> getPackMetaData(DataPack dataPack, IDataParser parser) {
+        if(null == dataPack || null == dataPack || null != dataPack.getDataBytes()) {
+            return null;
+        }
+        ByteBuf buf = Unpooled.wrappedBuffer(dataPack.getDataBytes());
+        return parser.getMetaData(buf);
     }
 }
