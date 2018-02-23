@@ -32,9 +32,9 @@ allprojects {
         }
     }
 
-    /*configurations {
-        compile.resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
-    }*/
+    configurations.all {
+        resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
+    }
 
     compileJava{
         options.encoding = "utf-8"
