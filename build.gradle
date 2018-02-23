@@ -32,8 +32,8 @@ allprojects {
         }
     }
 
-    configurations.all {
-        resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
+    configurations {
+        compile.resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
     }
 
     compileJava{
