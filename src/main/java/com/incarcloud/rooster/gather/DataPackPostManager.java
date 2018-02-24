@@ -339,6 +339,7 @@ public class DataPackPostManager {
                 throw new IllegalArgumentException();
             }
 
+            // 构建MQMsg消息体
             List<byte[]> msgList = new ArrayList<>(packWrapBatch.size());
             for (DataPackWrap packWrap : packWrapBatch) {
                 DataPack dp = packWrap.getDataPack();
@@ -359,11 +360,14 @@ public class DataPackPostManager {
                 }
             }
 
-            List<MqSendResult> resultList = bigMQ.post(host.getDataPackTopic(),msgList);
+            // 向MQ发送消息
+            List<MqSendResult> resultList = bigMQ.post(host.getDataPackTopic(), msgList);
+            s_logger.debug("resultList: {}", resultList.size());
 
-            s_logger.debug("resultList:"+resultList.size());
+            // 测试缓存获取数据
+            //s_logger.debug(cacheManager.get("com.incarcloud.rooster:device-private-key:911111111111119"));
 
-            //回应设备
+            // 回应设备
             for (int i = 0; i < resultList.size(); i++) {
                 MqSendResult sendResult = resultList.get(i);
                 IDataParser dataParser = packWrapBatch.get(i).getDataParser();
@@ -397,7 +401,7 @@ public class DataPackPostManager {
                 }
             }
 
-            //释放datapack
+            // 释放datapack
             for (DataPackWrap packWrap : packWrapBatch) {
                 packWrap.getDataPack().freeBuf();
             }
