@@ -103,7 +103,7 @@ public class GatherHost {
         }
 
         if (null == _slots || 0 == _slots.size()) {
-            throw new RuntimeException("no slot!!");
+            throw new RuntimeException("no slot!!!");
         }
 
         //启动所有采集槽
@@ -186,12 +186,14 @@ public class GatherHost {
             if("tcp".equals(protocol)){
                 GatherSlot slot = new GatherSlot4TCP(Integer.parseInt(port),this);
                 slot.setDataParser(parse);
+                slot.setCacheManager(this.getCacheManager());
                 _slots.add(slot);
             }
 
             if("udp".equals(protocol)){
                 GatherSlot slot = new GatherSlot4UDP(Integer.parseInt(port),this);
                 slot.setDataParser(parse);
+                slot.setCacheManager(this.getCacheManager());
                 _slots.add(slot);
             }
 

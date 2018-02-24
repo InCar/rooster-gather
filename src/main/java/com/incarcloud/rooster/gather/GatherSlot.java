@@ -1,5 +1,6 @@
 package com.incarcloud.rooster.gather;
 
+import com.incarcloud.rooster.cache.ICacheManager;
 import com.incarcloud.rooster.datapack.IDataParser;
 
 import java.io.InvalidClassException;
@@ -29,6 +30,10 @@ public abstract class GatherSlot {
      * 数据包解析器
      */
     protected IDataParser _dataParser;
+    /**
+     * 缓存管理器
+     */
+    private ICacheManager _cacheManager;
 
     /**
      * @param host 采集槽所在主机
@@ -50,6 +55,10 @@ public abstract class GatherSlot {
     public void setDataParser(String parser)
             throws InvalidClassException, ClassNotFoundException, IllegalAccessException, InstantiationException {
         setDataParser(parser, "com.incarcloud.rooster.datapack");
+    }
+
+    public void setCacheManager(ICacheManager cacheManager) {
+        this._cacheManager = cacheManager;
     }
 
     /**
@@ -77,6 +86,10 @@ public abstract class GatherSlot {
 
     public IDataParser getDataParser() {
         return _dataParser;
+    }
+
+    public ICacheManager getCacheManager() {
+        return _cacheManager;
     }
 
     /**

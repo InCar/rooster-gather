@@ -364,9 +364,6 @@ public class DataPackPostManager {
             List<MqSendResult> resultList = bigMQ.post(host.getDataPackTopic(), msgList);
             s_logger.debug("resultList: {}", resultList.size());
 
-            // 测试缓存获取数据
-            //s_logger.debug(cacheManager.get("com.incarcloud.rooster:device-private-key:911111111111119"));
-
             // 回应设备
             for (int i = 0; i < resultList.size(); i++) {
                 MqSendResult sendResult = resultList.get(i);

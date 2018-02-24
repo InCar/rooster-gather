@@ -1,5 +1,6 @@
 package com.incarcloud.rooster.gather;
 
+import com.incarcloud.rooster.cache.ICacheManager;
 import com.incarcloud.rooster.datapack.DataPack;
 import com.incarcloud.rooster.datapack.IDataParser;
 import com.incarcloud.rooster.gather.remotecmd.session.SessionFactory;
@@ -46,7 +47,16 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
      * 累积缓冲区
      */
     private ByteBuf _buffer = null;
-    private IDataParser _parser = null;
+
+    /**
+     * 数据包解析器
+     */
+    private IDataParser _parser;
+
+    /**
+     * 缓存管理器
+     */
+    private ICacheManager _cacheManager;
 
     /**
      * @param slot 采集槽
@@ -54,6 +64,7 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
     GatherChannelHandler(GatherSlot slot) {
         _slot = slot;
         _parser = slot.getDataParser();
+        _cacheManager = slot.getCacheManager();
     }
 
 
@@ -103,6 +114,8 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
         Channel channel = ctx.channel();
         List<DataPack> listPacks = null;
         try {
+            // 测试Redis缓存
+            System.out.println(_cacheManager.get("com.incarcloud.rooster:device-private-key:911111111111119"));
 
             // 1、解析包(分解，校验，解密)
             listPacks = _parser.extract(buf);
@@ -172,7 +185,7 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
      * @return
      */
     private Map<String, Object> getPackMetaData(DataPack dataPack, IDataParser parser) {
-        if(null == dataPack || null == dataPack || null != dataPack.getDataBytes()) {
+        if(null == dataPack || null == dataPack.getDataBytes() || null == parser) {
             return null;
         }
         ByteBuf buf = Unpooled.wrappedBuffer(dataPack.getDataBytes());
