@@ -11,6 +11,7 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.util.ReferenceCountUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -115,7 +116,7 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
         List<DataPack> listPacks = null;
         try {
             // 测试Redis缓存
-            System.out.println(_cacheManager.get("com.incarcloud.rooster:device-private-key:911111111111119"));
+            //System.out.println(_cacheManager.get("com.incarcloud.rooster:device-private-key:911111111111119"));
 
             // 1、解析包(分解，校验，解密)
             listPacks = _parser.extract(buf);
@@ -188,7 +189,9 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
         if(null == dataPack || null == dataPack.getDataBytes() || null == parser) {
             return null;
         }
-        ByteBuf buf = Unpooled.wrappedBuffer(dataPack.getDataBytes());
-        return parser.getMetaData(buf);
+        ByteBuf buffer = Unpooled.wrappedBuffer(dataPack.getDataBytes());
+        Map<String, Object> mapMeta = parser.getMetaData(buffer);
+        ReferenceCountUtil.release(buffer);
+        return mapMeta;
     }
 }

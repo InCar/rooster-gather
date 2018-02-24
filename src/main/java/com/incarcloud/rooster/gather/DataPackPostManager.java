@@ -20,6 +20,7 @@ import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -360,7 +361,7 @@ public class DataPackPostManager {
                 }
             }
 
-            // 向MQ发送消息
+            // 发送消息
             List<MqSendResult> resultList = bigMQ.post(host.getDataPackTopic(), msgList);
             s_logger.debug("resultList: {}", resultList.size());
 
@@ -370,19 +371,47 @@ public class DataPackPostManager {
                 IDataParser dataParser = packWrapBatch.get(i).getDataParser();
                 DataPack dataPack = packWrapBatch.get(i).getDataPack();
                 Channel channel = packWrapBatch.get(i).getChannel();
+                Map<String, Object> metaData = packWrapBatch.get(i).getMetaData();
 
                 try {
 
                     if (null == sendResult.getException()) {// 正常返回
+                        // 保存数据到MQ成功
                         s_logger.debug("success send to MQ:" + sendResult.getData());
-                        ByteBuf resp = dataParser.createResponse(dataPack, ERespReason.OK);
+
+                        // 激活流程
+                        ByteBuf resp = null;
+                        if(null != metaData) {
+                            // 获得设备号
+                            String deviceId = (String) metaData.get(Constants.MetaDataMapKey.DEVICE_ID);
+                            int packType = (int) metaData.get(Constants.MetaDataMapKey.PACK_TYPE);
+
+                            // 判断报文类型
+                            switch (packType) {
+                                case Constants.PackType.ACTIVATE:
+                                    /* 激活数据包 */
+                                    //　获得车辆标识
+                                    String vin = (String) metaData.get(Constants.MetaDataMapKey.DEVICE_ID);
+                                    // 判断
+
+                                    break;
+                                case Constants.PackType.LOGIN:
+                                    /* 登陆数据包 */
+                                    break;
+                                default:
+                                    /* 非激活或登陆数据包 */
+                            }
+                        }
+
+                        // 其他情况
+                        if(null == resp) {
+                            resp = dataParser.createResponse(dataPack, ERespReason.OK);
+                        }
                         s_logger.debug("success send resp:"+ByteBufUtil.hexDump(resp));
 
                         if (null != resp) {//需要回应设备
                             channel.writeAndFlush(resp);
                         }
-
-
                     } else {
                         s_logger.error("failed send to MQ:" + sendResult.getException().getMessage());
                         ByteBuf resp = dataParser.createResponse(dataPack, ERespReason.ERROR);
