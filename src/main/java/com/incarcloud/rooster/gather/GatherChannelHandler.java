@@ -1,23 +1,25 @@
 package com.incarcloud.rooster.gather;
 
+import com.google.gson.reflect.TypeToken;
+import com.incarcloud.rooster.cache.ICacheManager;
 import com.incarcloud.rooster.datapack.DataPack;
 import com.incarcloud.rooster.datapack.IDataParser;
 import com.incarcloud.rooster.gather.remotecmd.session.SessionFactory;
+import com.incarcloud.rooster.share.Constants;
+import com.incarcloud.rooster.util.GsonFactory;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.util.ReferenceCountUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.SocketAddress;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * 采集器的通道处理类
@@ -32,15 +34,9 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
     private static Logger s_logger = LoggerFactory.getLogger(GatherChannelHandler.class);
 
     /**
-     * vin 码
+     * 设备报文Meta数据
      */
-    private String vin;
-
-    /**
-     * 设备ID
-     */
-    private String deviceId;
-
+    private Map<String, Object> metaData;
 
     /**
      * 所属的采集槽
@@ -51,7 +47,16 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
      * 累积缓冲区
      */
     private ByteBuf _buffer = null;
-    private IDataParser _parser = null;
+
+    /**
+     * 数据包解析器
+     */
+    private IDataParser _parser;
+
+    /**
+     * 缓存管理器
+     */
+    private ICacheManager _cacheManager;
 
     /**
      * @param slot 采集槽
@@ -59,6 +64,7 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
     GatherChannelHandler(GatherSlot slot) {
         _slot = slot;
         _parser = slot.getDataParser();
+        _cacheManager = slot.getCacheManager();
     }
 
 
@@ -108,45 +114,64 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
         Channel channel = ctx.channel();
         List<DataPack> listPacks = null;
         try {
+            // 1.获得设备号
+            String deviceId = _parser.getDeviceId(buf);
 
-            // 1、解析包
+            // 2.设置平台公钥和私钥数据
+            String rsaPrivateKeyString = _cacheManager.get(Constants.CacheNamespace.CACHE_NS_DEVICE_PRIVATE_KEY + deviceId);
+            String rsaPublicKeyString = _cacheManager.get(Constants.CacheNamespace.CACHE_NS_DEVICE_PUBLIC_KEY + deviceId);
+
+            // 2.1 打印公钥和私钥
+            s_logger.debug("RSA Private: {}", rsaPrivateKeyString);
+            s_logger.debug("RSA Public Key: {}", rsaPublicKeyString);
+
+            // 2.2 设置公钥和私钥
+            if(StringUtils.isNotBlank(rsaPrivateKeyString) && StringUtils.isNotBlank(rsaPublicKeyString)) {
+                // string转map
+                Map<String, Object> mapPrivateKey = GsonFactory.newInstance().createGson().fromJson(rsaPrivateKeyString, new TypeToken<Map<String, Object>>() {}.getType());
+                Map<String, Object> mapPublicKey = GsonFactory.newInstance().createGson().fromJson(rsaPublicKeyString, new TypeToken<Map<String, Object>>() {}.getType());
+
+                // 设置给解析器
+                _parser.setPrivateKey(deviceId, Base64.getDecoder().decode(mapPrivateKey.get(Constants.RSADataMapKey.N).toString()), Base64.getDecoder().decode(mapPrivateKey.get(Constants.RSADataMapKey.E).toString()));
+                _parser.setPublicKey(deviceId, Base64.getDecoder().decode(mapPublicKey.get(Constants.RSADataMapKey.N).toString()), Double.valueOf(mapPublicKey.get(Constants.RSADataMapKey.E).toString()).longValue());
+            }
+
+            // 3.解析包(分解，校验，解密)
             listPacks = _parser.extract(buf);
-
-            s_logger.debug("DataPackList Size: {}", listPacks.size());
-
             if (null == listPacks || 0 == listPacks.size()) {
-                s_logger.debug("no packs!!!");
+                s_logger.debug("No packs !!!");
                 return;
             }
+            s_logger.debug("DataPackList Size: {}", listPacks.size());
 
-            //注册设备会话
-            if (StringUtils.isBlank(deviceId) && StringUtils.isBlank(vin)) {//已注册就不用再次注册
-                Map<String, Object> metaData = getPackMetaData(listPacks.get(0), _parser);
-                registerConnection(metaData, channel);
+            // 4.获得设备报文Meta数据
+            metaData = getPackMetaData(listPacks.get(0), _parser);
+            s_logger.debug("MetaData: {}", metaData);
 
-                vin = (String) metaData.get("vin");
-                deviceId = (String) metaData.get("deviceId");
+            // 5.设置SecurityKey缓存(限制登陆报文)
+            Object packType = metaData.get(Constants.MetaDataMapKey.PACK_TYPE);
+            if(null != packType && Constants.PackType.LOGIN == (int) packType) {
+                // 缓存动态密钥，用于构建远程命令报文
+                byte[] securityKeyBytes = _parser.getSecurityKey(deviceId);
+                _cacheManager.set(Constants.CacheNamespace.CACHE_NS_DEVICE_SECURITY_KEY + deviceId, Base64.getEncoder().encodeToString(securityKeyBytes));
             }
 
-            s_logger.debug("MetaData: {}", getPackMetaData(listPacks.get(0), _parser));
-
-            // 2、扔到host的消息队列
+            // 6.扔到host的消息队列
             Date currentTime = Calendar.getInstance().getTime();
             for (DataPack pack : listPacks) {
                 // 填充接收时间
                 pack.setReceiveTime(currentTime);//数据包的接收时间
 
                 // 处理消息队列
-                DataPackWrap dpw = new DataPackWrap(channel, _parser, pack);
-                if (!StringUtils.isBlank(vin)) {
-                    dpw.setVin(vin);
-                }
+                DataPackWrap dpw = new DataPackWrap(channel, _parser, pack, metaData);
+
+                // 放到缓存队列
                 _slot.putToCacheQueue(dpw);
                 s_logger.debug("Put ({}) to queue ok!", pack);
             }
 
-            //缓存deviceId - Channel 关系
-            if (!StringUtils.isBlank(deviceId)) {
+            //　7.缓存deviceId - Channel 关系
+            if (StringUtils.isNotBlank(deviceId)) {
                 SessionFactory.getInstance().createRelationSessionId(ctx, deviceId);
             }
 
@@ -168,62 +193,29 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
     /**
      * 客户端主动断开
      *
-     * @param ctx
+     * @param ctx　网络通道
      * @throws Exception
      */
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-
-        SocketAddress devAddr = ctx.channel().remoteAddress();
-        s_logger.info("Device({}) disconnected!", devAddr);
-
-        /*if (null != vin) {//释放掉缓存的连接
-            _slot.getDeviceConnectionContainer().removeDeviceConnection(vin);
-            _slot.removeConnectionFromRemote(vin);
-            s_logger.debug("success remove device connection from remote,vin="+vin);
-        }*/
-    }
-
-
-    /**
-     * 注册设备连接,便于下发命令
-     *
-     * @param metaData 包含车辆 vin/设备号/协议
-     * @param channel
-     */
-    private void registerConnection(Map<String, Object> metaData, Channel channel) {
-        String vin0 = (String) metaData.get("vin");
-        String protocol = (String) metaData.get("protocol");
-
-
-        s_logger.debug("registerConnection vin :" + vin0);
-
-        if (StringUtils.isBlank(vin0)) {
-            String deviceId = (String) metaData.get("deviceId");
-            if (StringUtils.isBlank(deviceId)) {
-                s_logger.error("VIN or deviceId is null !!!");
-                return;
-            }
-
-            //没有vin码就用 DEVICEID+#+设备号  代替
-            vin0 = "DEVICEID#" + deviceId;
-        }
-
+        // 打印断开连接信息
+        s_logger.info("Device({}) disconnected!", ctx.channel().remoteAddress());
     }
 
     /**
      * 获取vin/设备号/协议
      *
-     * @param dataPack
-     * @param _parser
+     * @param dataPack 数据包
+     * @param parser 解析器
      * @return
      */
-    private Map<String, Object> getPackMetaData(DataPack dataPack, IDataParser _parser) {
-
-        byte[] dataByte = dataPack.getDataBytes();
-        ByteBuf buf = Unpooled.buffer(dataByte.length);
-        buf.writeBytes(dataByte);
-
-        return _parser.getMetaData(buf);
+    private Map<String, Object> getPackMetaData(DataPack dataPack, IDataParser parser) {
+        if(null == dataPack || null == dataPack.getDataBytes() || null == parser) {
+            return null;
+        }
+        ByteBuf buffer = Unpooled.wrappedBuffer(dataPack.getDataBytes());
+        Map<String, Object> mapMeta = parser.getMetaData(buffer);
+        ReferenceCountUtil.release(buffer);
+        return mapMeta;
     }
 }
