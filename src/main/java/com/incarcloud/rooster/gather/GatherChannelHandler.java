@@ -1,10 +1,12 @@
 package com.incarcloud.rooster.gather;
 
+import com.google.gson.reflect.TypeToken;
 import com.incarcloud.rooster.cache.ICacheManager;
 import com.incarcloud.rooster.datapack.DataPack;
 import com.incarcloud.rooster.datapack.IDataParser;
 import com.incarcloud.rooster.gather.remotecmd.session.SessionFactory;
 import com.incarcloud.rooster.share.Constants;
+import com.incarcloud.rooster.util.GsonFactory;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
@@ -17,10 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.SocketAddress;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * 采集器的通道处理类
@@ -115,21 +114,54 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
         Channel channel = ctx.channel();
         List<DataPack> listPacks = null;
         try {
-            // 测试Redis缓存
-            //System.out.println(_cacheManager.get("com.incarcloud.rooster:device-private-key:911111111111119"));
+            // 1、获得设备报文Meta数据
+            metaData = getPackMetaData(listPacks.get(0), _parser);
+            s_logger.debug("MetaData: {}", metaData);
 
-            // 1、解析包(分解，校验，解密)
+            // 2.设置平台公钥和私钥数据
+            String deviceId = (String) metaData.get(Constants.MetaDataMapKey.DEVICE_ID);
+            if (StringUtils.isNotBlank(deviceId)) {
+                // 需要设置报文类型：激活和登陆
+                int packType = (int) metaData.get(Constants.MetaDataMapKey.PACK_TYPE);
+                if(Constants.PackType.ACTIVATE == packType || Constants.PackType.LOGIN == packType) {
+                    // RSA公钥和私钥
+                    String rsaPrivateKeyString = _cacheManager.get(Constants.CacheNamespace.CACHE_NS_DEVICE_PRIVATE_KEY + deviceId);
+                    String rsaPublicKeyString = _cacheManager.get(Constants.CacheNamespace.CACHE_NS_DEVICE_PUBLIC_KEY + deviceId);
+
+                    // 打印公钥和私钥
+                    s_logger.debug("RSA Private: {}", rsaPrivateKeyString);
+                    s_logger.debug("RSA Public Key: {}", rsaPublicKeyString);
+
+                    // 设置公钥和私钥
+                    if(StringUtils.isNotBlank(rsaPrivateKeyString) && StringUtils.isNotBlank(rsaPublicKeyString)) {
+                        // string转map
+                        Map<String, Object> mapPrivateKey = GsonFactory.newInstance().createGson().fromJson(rsaPrivateKeyString, new TypeToken<Map<String, Object>>() {}.getType());
+                        Map<String, Object> mapPublicKey = GsonFactory.newInstance().createGson().fromJson(rsaPublicKeyString, new TypeToken<Map<String, Object>>() {}.getType());
+
+                        // 设置给解析器
+                        _parser.setPrivateKey(deviceId, Base64.getDecoder().decode(mapPrivateKey.get(Constants.RSADataMapKey.N).toString()), Base64.getDecoder().decode(mapPrivateKey.get(Constants.RSADataMapKey.E).toString()));
+                        _parser.setPublicKey(deviceId, Base64.getDecoder().decode(mapPublicKey.get(Constants.RSADataMapKey.N).toString()), Double.valueOf(mapPublicKey.get(Constants.RSADataMapKey.E).toString()).longValue());
+                    }
+                }
+
+                // 设置RSA密钥之后，登陆需要处理逻辑
+                if(Constants.PackType.LOGIN == packType) {
+                    // 重构一次metaData
+                    metaData = getPackMetaData(listPacks.get(0), _parser);
+
+                    // 缓存动态密钥
+                    byte[] securityKeyBytes = _parser.getSecurityKey(deviceId);
+                    _cacheManager.set(Constants.CacheNamespace.CACHE_NS_DEVICE_SECURITY_KEY + deviceId, Base64.getEncoder().encodeToString(securityKeyBytes));
+                }
+            }
+
+            // 2、解析包(分解，校验，解密)
             listPacks = _parser.extract(buf);
-            s_logger.debug("DataPackList Size: {}", listPacks.size());
-
             if (null == listPacks || 0 == listPacks.size()) {
                 s_logger.debug("no packs!!!");
                 return;
             }
-
-            // 2、获得设备报文Meta数据
-            metaData = getPackMetaData(listPacks.get(0), _parser);
-            s_logger.debug("MetaData: {}", metaData);
+            s_logger.debug("DataPackList Size: {}", listPacks.size());
 
             // 3、扔到host的消息队列
             Date currentTime = Calendar.getInstance().getTime();
@@ -146,8 +178,7 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
             }
 
             //　4、缓存deviceId - Channel 关系
-            String deviceId = (String) metaData.get(Constants.MetaDataMapKey.DEVICE_ID);
-            if (!StringUtils.isBlank(deviceId)) {
+            if (StringUtils.isNotBlank(deviceId)) {
                 SessionFactory.getInstance().createRelationSessionId(ctx, deviceId);
             }
 

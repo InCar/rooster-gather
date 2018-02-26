@@ -391,8 +391,17 @@ public class DataPackPostManager {
                                 case Constants.PackType.ACTIVATE:
                                     /* 激活数据包 */
                                     //　获得车辆标识
-                                    String vin = (String) metaData.get(Constants.MetaDataMapKey.DEVICE_ID);
-                                    // 判断
+                                    String vin = (String) metaData.get(Constants.MetaDataMapKey.VIN);
+                                    String cacheVin = cacheManager.get(Constants.CacheNamespace.CACHE_NS_DEVICE_CODE + deviceId);
+
+                                    // 打印车辆信息
+                                    s_logger.info("Activate: deviceId = {}, vin = {}, cacheVin = {}", deviceId, vin, cacheVin);
+
+                                    // 判断deviceId和vin在缓存中是否匹配
+                                    if(!StringUtils.equals(cacheVin, vin)) {
+                                        // 激活失败，原因：TBox未安装到指定车辆
+                                        resp = dataParser.createResponse(dataPack, ERespReason.ERROR);
+                                    }
 
                                     break;
                                 case Constants.PackType.LOGIN:
