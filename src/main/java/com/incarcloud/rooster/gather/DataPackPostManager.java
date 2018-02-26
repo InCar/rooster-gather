@@ -400,7 +400,7 @@ public class DataPackPostManager {
                                     // 判断deviceId和vin在缓存中是否匹配
                                     if(!StringUtils.equals(cacheVin, vin)) {
                                         // 激活失败，原因：TBox未安装到指定车辆
-                                        resp = dataParser.createResponse(dataPack, ERespReason.ERROR);
+                                        resp = dataParser.createResponse(dataPack, ERespReason.MISMATCH);
                                     }
 
                                     break;
