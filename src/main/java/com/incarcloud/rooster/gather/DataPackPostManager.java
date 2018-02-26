@@ -13,6 +13,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.channel.Channel;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -149,7 +150,7 @@ public class DataPackPostManager {
         } catch (InterruptedException e) {
             //这里一般不会有中断触发这里
             task.destroy();
-            s_logger.error("put to cacheQueue  interrapted", task, e.getMessage());
+            s_logger.error("Put to cacheQueue interrupted, {}", ExceptionUtils.getMessage(e));
         }
     }
 
@@ -285,7 +286,7 @@ public class DataPackPostManager {
         @Override
         public void run() {
 
-            s_logger.debug("####QueueConsumerThread  start");
+            s_logger.debug("## QueueConsumerThread  start !!!");
 
             List<DataPackWrap> packWrapList = new ArrayList<DataPackWrap>(BATCH_POST_SIZE);
 
@@ -300,7 +301,7 @@ public class DataPackPostManager {
 
                         //取满一个批次了，直接发送完后再取下一个批次
                         if (BATCH_POST_SIZE == packWrapList.size()) {
-                            s_logger.debug("!!a batch complete:"+packWrapList.size());
+                            s_logger.debug("## One batch complete size: {}", packWrapList.size());
                             batchSendDataPackToMQ(packWrapList);
                             packWrapList.clear();
                         }
@@ -310,7 +311,7 @@ public class DataPackPostManager {
 
                     //没取到说明队列暂时没有数据，将取到的批量发送
                     if (packWrapList.size() > 0) {
-                        s_logger.debug("##a batch complete:"+packWrapList.size());
+                        s_logger.debug("## One batch complete size: {}", packWrapList.size());
                         batchSendDataPackToMQ(packWrapList);
                         packWrapList.clear();
                     }
@@ -334,7 +335,7 @@ public class DataPackPostManager {
          * @param packWrapBatch
          */
         protected void batchSendDataPackToMQ(List<DataPackWrap> packWrapBatch) {
-            s_logger.debug("batchSendDataPackToMQ:"+packWrapBatch.size());
+            s_logger.debug("Batch send datapack size to MQ: {}", packWrapBatch.size());
 
             if (null == packWrapBatch || 0 == packWrapBatch.size()) {
                 throw new IllegalArgumentException();
@@ -357,13 +358,13 @@ public class DataPackPostManager {
 
                     msgList.add(GsonFactory.newInstance().createGson().toJson(mqMsg).getBytes());
                 } catch (UnsupportedEncodingException e) {
-                    s_logger.error("plant unsupport  UTF-8," + packWrap.getDataPack());
+                    s_logger.error("Plant not support UTF-8, {}", packWrap.getDataPack());
                 }
             }
 
             // 发送消息
             List<MqSendResult> resultList = bigMQ.post(host.getDataPackTopic(), msgList);
-            s_logger.debug("resultList: {}", resultList.size());
+            s_logger.debug("Result list size: {}", resultList.size());
 
             // 回应设备
             for (int i = 0; i < resultList.size(); i++) {
@@ -377,7 +378,7 @@ public class DataPackPostManager {
 
                     if (null == sendResult.getException()) {// 正常返回
                         // 保存数据到MQ成功
-                        s_logger.debug("success send to MQ:" + sendResult.getData());
+                        s_logger.debug("Success send to MQ: {}", sendResult.getData());
 
                         // 激活流程
                         ByteBuf resp = null;
@@ -401,6 +402,11 @@ public class DataPackPostManager {
                                     if(!StringUtils.equals(cacheVin, vin)) {
                                         // 激活失败，原因：TBox未安装到指定车辆
                                         resp = dataParser.createResponse(dataPack, ERespReason.MISMATCH);
+                                    } else {
+                                        // 激活成功，维护VIN找设备号
+                                        if(StringUtils.isNotBlank(cacheVin)) {
+                                            cacheManager.set(Constants.CacheNamespace.CACHE_NS_VEHICLE_VIN + cacheVin, deviceId);
+                                        }
                                     }
 
                                     break;
@@ -416,23 +422,26 @@ public class DataPackPostManager {
                         if(null == resp) {
                             resp = dataParser.createResponse(dataPack, ERespReason.OK);
                         }
-                        s_logger.debug("success send resp:"+ByteBufUtil.hexDump(resp));
+                        s_logger.debug("Success send resp: {}", ByteBufUtil.hexDump(resp));
 
-                        if (null != resp) {//需要回应设备
+                        // 需要回应设备
+                        if (null != resp) {
                             channel.writeAndFlush(resp);
                         }
                     } else {
-                        s_logger.error("failed send to MQ:" + sendResult.getException().getMessage());
+                        // 创建错误应答包
+                        s_logger.error("Failed send to MQ:" + sendResult.getException().getMessage());
                         ByteBuf resp = dataParser.createResponse(dataPack, ERespReason.ERROR);
-                        s_logger.debug("failed send resp:"+ByteBufUtil.hexDump(resp));
+                        s_logger.debug("Failed send resp: {}", ByteBufUtil.hexDump(resp));
 
-                        if (null != resp) {//需要回应设备
+                        // 需要回应设备
+                        if (null != resp) {
                             channel.writeAndFlush(resp);
                         }
                     }
 
                 } catch (Exception e) {
-                    s_logger.error("sendDataPackToMQ " + e.getMessage());
+                    s_logger.error("Send datapack to MQ exception: {}", ExceptionUtils.getMessage(e));
                 }
             }
 
