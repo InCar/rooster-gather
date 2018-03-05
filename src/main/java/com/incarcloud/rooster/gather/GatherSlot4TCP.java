@@ -60,7 +60,7 @@ class GatherSlot4TCP extends GatherSlot {
         try {
             future.sync();
 
-            s_logger.info(getName()+" start success! protocol:"+_dataParser.getClass()+",listen on port "+_port);
+            s_logger.info(getName()+" start success! protocol: {}, listen on port {}.", _dataParser.getClass(), _port);
         }
         catch (InterruptedException ex){
             throw new RuntimeException(ex);
