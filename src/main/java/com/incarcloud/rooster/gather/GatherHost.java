@@ -103,7 +103,7 @@ public class GatherHost {
         }
 
         if (null == _slots || 0 == _slots.size()) {
-            throw new RuntimeException("no slot!!!");
+            throw new RuntimeException("No slot!!!");
         }
 
         //启动所有采集槽
@@ -246,7 +246,7 @@ public class GatherHost {
             return;
         }
 
-        s_logger.debug("putToCacheQueue:"+packWrap);
+        s_logger.debug("PutToCacheQueue: {}", packWrap);
 
         dataPackPostManager.add(packWrap);
     }

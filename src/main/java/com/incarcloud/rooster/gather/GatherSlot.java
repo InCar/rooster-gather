@@ -97,11 +97,11 @@ public abstract class GatherSlot {
      */
     public synchronized void start() {
         if (null == _dataParser) {
-            throw new RuntimeException("dataParse is  null !!");
+            throw new RuntimeException("DataParse is null!!!");
         }
 
         if (null == _host) {
-            throw new RuntimeException("host is  null !!");
+            throw new RuntimeException("Host is null!!!");
         }
 
         start0();
