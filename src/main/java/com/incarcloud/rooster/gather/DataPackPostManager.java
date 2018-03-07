@@ -162,7 +162,7 @@ public class DataPackPostManager {
             new Thread(threadGroup, new QueueConsumerThread(host.getBigMQ(), host.getCacheManager())).start();
         }
 
-        //间隔一定时间统计队列状况
+        // 间隔一定时间统计队列状况
         scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
             public void run() {
                 int _inQueueCount = inQueueCount.get();
@@ -175,7 +175,7 @@ public class DataPackPostManager {
                 lastInQueueCount = _inQueueCount;
                 lastOutQueueCount = _outQueueCount;
 
-                s_logger.info(DataPackPostManager.this.name + " queue  contains  "
+                s_logger.debug(DataPackPostManager.this.name + " queue  contains  "
                         + remainQueueCount + " datapack for  send in queue,last " + period + " second " + newInQueueCount
                         + " in , " + newOutQueueCount + "  out  !");
 
@@ -244,17 +244,17 @@ public class DataPackPostManager {
                                         session.write(bytes).addListener(channelFuture->{
                                             if (channelFuture.isSuccess()){
                                                 s_logger.info("Send msg to T-Box Success: deviceId: {}, bytes: {}", deviceId, new String(bytes));
-                                                RemoteCmdFeedbackMsg feedbackMsg = new RemoteCmdFeedbackMsg(deviceId, packId, 1);
+                                                RemoteCmdFeedbackMsg feedbackMsg = new RemoteCmdFeedbackMsg(remoteCmdSendMsg, 1);
                                                 bigMQ.post(host.getFeedBackTopic(),GsonFactory.newInstance().createGson().toJson(feedbackMsg).getBytes()) ;
                                             }else{
                                                 s_logger.info("Send msg to T-Box Error: deviceId:{}, bytes: {}", deviceId, new String(bytes));
-                                                RemoteCmdFeedbackMsg feedbackMsg = new RemoteCmdFeedbackMsg(deviceId, packId, 0);
+                                                RemoteCmdFeedbackMsg feedbackMsg = new RemoteCmdFeedbackMsg(remoteCmdSendMsg, 0);
                                                 bigMQ.post(host.getFeedBackTopic(),GsonFactory.newInstance().createGson().toJson(feedbackMsg).getBytes()) ;
                                             }
                                         });
                                     }
                                 }catch (Exception e){
-                                    s_logger.error("remote message err : {}",new String(mqMsg));
+                                    s_logger.error("Remote message err : {}",new String(mqMsg));
                                 }
                             }
                         }
@@ -413,26 +413,29 @@ public class DataPackPostManager {
                                     String cacheVin = cacheManager.get(Constants.CacheNamespace.CACHE_NS_DEVICE_CODE + deviceId);
 
                                     // 打印车辆信息
-                                    s_logger.info("Activate: deviceId = {}, vin = {}, cacheVin = {}", deviceId, vin, cacheVin);
+                                    s_logger.info("Activate T-Box: deviceId = {}, vin = {}, cacheVin = {}", deviceId, vin, cacheVin);
 
                                     // 设备只能被激活一次
                                     String cacheDeviceId = cacheManager.get(Constants.CacheNamespace.CACHE_NS_VEHICLE_VIN + vin);
                                     if(StringUtils.isNotBlank(cacheDeviceId)) {
                                         // 已激活设备不能再次激活
                                         resp = dataParser.createResponse(dataPack, ERespReason.ACTIVATED);
-                                    }
+                                        s_logger.info("Activated failed: the device(id={}) has been activated.", deviceId);
 
-                                    // 判断deviceId和vin在缓存中是否匹配
-                                    if(!StringUtils.equals(cacheVin, vin)) {
-                                        // 激活失败，原因：TBox未安装到指定车辆
-                                        resp = dataParser.createResponse(dataPack, ERespReason.MISMATCH);
                                     } else {
+                                        // 判断deviceId和vin在缓存中是否匹配
+                                        if(StringUtils.isNotBlank(cacheVin) && !StringUtils.equals(cacheVin, vin)) {
+                                            // 激活失败，原因：TBox未安装到指定车辆
+                                            resp = dataParser.createResponse(dataPack, ERespReason.MISMATCH);
+                                            s_logger.info("Activated failed: the vin for this device(id={}) is error.", deviceId);
+                                        }
+
                                         // 激活成功，维护VIN找设备号
-                                        if(StringUtils.isNotBlank(cacheVin)) {
+                                        if(StringUtils.isNotBlank(cacheVin) && StringUtils.equals(cacheVin, vin)) {
                                             cacheManager.set(Constants.CacheNamespace.CACHE_NS_VEHICLE_VIN + cacheVin, deviceId);
+                                            s_logger.info("Activated success: deviceId = {}", deviceId);
                                         }
                                     }
-
                                     break;
                                 case Constants.PackType.LOGIN:
                                     /* 登陆数据包 */
@@ -446,7 +449,7 @@ public class DataPackPostManager {
                         if(null == resp) {
                             resp = dataParser.createResponse(dataPack, ERespReason.OK);
                         }
-                        s_logger.debug("Success send resp: {}", ByteBufUtil.hexDump(resp));
+                        s_logger.info("Success send resp: {}", ByteBufUtil.hexDump(resp));
 
                         // 需要回应设备
                         if (null != resp) {
@@ -456,7 +459,7 @@ public class DataPackPostManager {
                         // 创建错误应答包
                         s_logger.error("Failed send to MQ:" + sendResult.getException().getMessage());
                         ByteBuf resp = dataParser.createResponse(dataPack, ERespReason.ERROR);
-                        s_logger.debug("Failed send resp: {}", ByteBufUtil.hexDump(resp));
+                        s_logger.info("Failed send resp: {}", ByteBufUtil.hexDump(resp));
 
                         // 需要回应设备
                         if (null != resp) {

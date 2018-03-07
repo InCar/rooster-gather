@@ -109,7 +109,7 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
 
     private void OnRead(ChannelHandlerContext ctx, ByteBuf buf) {
         s_logger.info("Receive Bytes: {}", ByteBufUtil.hexDump(buf));
-        s_logger.debug("Parser Class: {}", _parser.getClass());
+        s_logger.info("Parser Class: {}", _parser.getClass());
 
         Channel channel = ctx.channel();
         List<DataPack> listPacks = null;
@@ -122,8 +122,8 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
             String rsaPublicKeyString = _cacheManager.get(Constants.CacheNamespace.CACHE_NS_DEVICE_PUBLIC_KEY + deviceId);
 
             // 2.1 打印公钥和私钥
-            s_logger.debug("RSA Private: {}", rsaPrivateKeyString);
-            s_logger.debug("RSA Public Key: {}", rsaPublicKeyString);
+            //s_logger.debug("RSA Private: {}", rsaPrivateKeyString);
+            //s_logger.debug("RSA Public Key: {}", rsaPublicKeyString);
 
             // 2.2 设置公钥和私钥
             if(StringUtils.isNotBlank(rsaPrivateKeyString) && StringUtils.isNotBlank(rsaPublicKeyString)) {
@@ -139,14 +139,14 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
             // 3.解析包(分解，校验，解密)
             listPacks = _parser.extract(buf);
             if (null == listPacks || 0 == listPacks.size()) {
-                s_logger.debug("No packs!!!");
+                s_logger.info("No packs!!!");
                 return;
             }
-            s_logger.debug("DataPackList Size: {}", listPacks.size());
+            s_logger.info("DataPackList Size: {}", listPacks.size());
 
             // 4.获得设备报文Meta数据
             metaData = getPackMetaData(listPacks.get(0), _parser);
-            s_logger.debug("MetaData: {}", metaData);
+            s_logger.info("MetaData: {}", metaData);
 
             // 5.设置SecurityKey缓存(限制登陆报文)
             Object packType = metaData.get(Constants.MetaDataMapKey.PACK_TYPE);
