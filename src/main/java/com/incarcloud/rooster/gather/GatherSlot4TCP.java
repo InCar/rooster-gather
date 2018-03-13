@@ -7,8 +7,11 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.timeout.IdleStateHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * TCP协议的采集处理槽
@@ -45,6 +48,7 @@ class GatherSlot4TCP extends GatherSlot {
         _bootstrap.childHandler(new ChannelInitializer<SocketChannel>() {
             @Override
             public void initChannel(SocketChannel ch) throws Exception {
+                ch.pipeline().addLast("IdleStateHandler", new IdleStateHandler(0L, 0L, 60L, TimeUnit.SECONDS));
                 ch.pipeline().addLast(new GatherChannelHandler(_this));
             }
         });
