@@ -60,10 +60,14 @@ public class SessionFactory {
      */
     public void cancelSession(ChannelHandlerContext ctx){
         String sessionId = ctx.channel().remoteAddress().toString() ;
-        String deviceId = sessionIdToDeviceId.get(sessionId) ;
-        sessionMap.remove(sessionId) ;
-        deviceIdToSessionId.remove(deviceId) ;
-        sessionIdToDeviceId.remove(sessionId) ;
+        if (null != sessionId){
+            String deviceId = sessionIdToDeviceId.get(sessionId) ;
+            if (null != deviceId){
+                deviceIdToSessionId.remove(deviceId) ;
+                sessionIdToDeviceId.remove(sessionId) ;
+            }
+            sessionMap.remove(sessionId) ;
+        }
     }
 
     public String getSessionId(String deviceId){
