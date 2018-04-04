@@ -128,12 +128,12 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
             // 2.2 设置公钥和私钥
             if(StringUtils.isNotBlank(rsaPrivateKeyString) && StringUtils.isNotBlank(rsaPublicKeyString)) {
                 // string转map
-                Map<String, Object> mapPrivateKey = GsonFactory.newInstance().createGson().fromJson(rsaPrivateKeyString, new TypeToken<Map<String, Object>>() {}.getType());
-                Map<String, Object> mapPublicKey = GsonFactory.newInstance().createGson().fromJson(rsaPublicKeyString, new TypeToken<Map<String, Object>>() {}.getType());
+                Map<String, String> mapPrivateKey = GsonFactory.newInstance().createGson().fromJson(rsaPrivateKeyString, new TypeToken<Map<String, String>>() {}.getType());
+                Map<String, String> mapPublicKey = GsonFactory.newInstance().createGson().fromJson(rsaPublicKeyString, new TypeToken<Map<String, String>>() {}.getType());
 
                 // 设置给解析器
-                _parser.setPrivateKey(deviceId, Base64.getDecoder().decode(mapPrivateKey.get(Constants.RSADataMapKey.N).toString()), Base64.getDecoder().decode(mapPrivateKey.get(Constants.RSADataMapKey.E).toString()));
-                _parser.setPublicKey(deviceId, Base64.getDecoder().decode(mapPublicKey.get(Constants.RSADataMapKey.N).toString()), Double.valueOf(mapPublicKey.get(Constants.RSADataMapKey.E).toString()).longValue());
+                _parser.setPrivateKey(deviceId, Base64.getDecoder().decode(mapPrivateKey.get(Constants.RSADataMapKey.N).toString()), Base64.getDecoder().decode(mapPrivateKey.get(Constants.RSADataMapKey.E)));
+                _parser.setPublicKey(deviceId, Base64.getDecoder().decode(mapPublicKey.get(Constants.RSADataMapKey.N).toString()), Long.valueOf(mapPublicKey.get(Constants.RSADataMapKey.E)));
             }
 
             // 3.解析包(分解，校验，解密)
