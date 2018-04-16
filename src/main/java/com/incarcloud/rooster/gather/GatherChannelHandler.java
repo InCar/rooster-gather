@@ -118,8 +118,8 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
             String deviceId = _parser.getDeviceId(buf);
 
             // 2.设置平台公钥和私钥数据
-            String rsaPrivateKeyString = _cacheManager.get(Constants.CacheNamespace.CACHE_NS_DEVICE_PRIVATE_KEY + deviceId);
-            String rsaPublicKeyString = _cacheManager.get(Constants.CacheNamespace.CACHE_NS_DEVICE_PUBLIC_KEY + deviceId);
+            String rsaPrivateKeyString = _cacheManager.hget(Constants.CacheNamespaceKey.CACHE_DEVICE_PRIVATE_KEY_HASH, deviceId);
+            String rsaPublicKeyString = _cacheManager.hget(Constants.CacheNamespaceKey.CACHE_DEVICE_PUBLIC_KEY_HASH, deviceId);
 
             // 2.1 打印公钥和私钥
             //s_logger.debug("RSA Private: {}", rsaPrivateKeyString);
@@ -153,7 +153,7 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
             if(null != packType && Constants.PackType.LOGIN == (int) packType) {
                 // 缓存动态密钥，用于构建远程命令报文
                 byte[] securityKeyBytes = _parser.getSecurityKey(deviceId);
-                _cacheManager.set(Constants.CacheNamespace.CACHE_NS_DEVICE_SECURITY_KEY + deviceId, Base64.getEncoder().encodeToString(securityKeyBytes));
+                _cacheManager.hset(Constants.CacheNamespaceKey.CACHE_DEVICE_SECURITY_KEY_HASH , deviceId, Base64.getEncoder().encodeToString(securityKeyBytes));
             }
 
             // 6.扔到host的消息队列

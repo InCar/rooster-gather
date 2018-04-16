@@ -410,13 +410,13 @@ public class DataPackPostManager {
                                     /* 激活数据包 */
                                     //　获得车辆标识
                                     String vin = (String) metaData.get(Constants.MetaDataMapKey.VIN);
-                                    String cacheVin = cacheManager.get(Constants.CacheNamespace.CACHE_NS_DEVICE_CODE + deviceId);
+                                    String cacheVin = cacheManager.hget(Constants.CacheNamespaceKey.CACHE_DEVICE_ID_HASH , deviceId);
 
                                     // 打印车辆信息
                                     s_logger.info("Activate T-Box: deviceId = {}, vin = {}, cacheVin = {}", deviceId, vin, cacheVin);
 
                                     // 设备只能被激活一次
-                                    String cacheDeviceId = cacheManager.get(Constants.CacheNamespace.CACHE_NS_VEHICLE_VIN + vin);
+                                    String cacheDeviceId = cacheManager.hget(Constants.CacheNamespaceKey.CACHE_VEHICLE_VIN_HASH , vin);
                                     if(StringUtils.isNotBlank(cacheDeviceId)) {
                                         // 已激活设备不能再次激活
                                         resp = dataParser.createResponse(dataPack, ERespReason.ACTIVATED);
@@ -432,7 +432,7 @@ public class DataPackPostManager {
 
                                         // 激活成功，维护VIN找设备号
                                         if(StringUtils.isNotBlank(cacheVin) && StringUtils.equals(cacheVin, vin)) {
-                                            cacheManager.set(Constants.CacheNamespace.CACHE_NS_VEHICLE_VIN + cacheVin, deviceId);
+                                            cacheManager.hset(Constants.CacheNamespaceKey.CACHE_VEHICLE_VIN_HASH , cacheVin, deviceId);
                                             s_logger.info("Activated success: deviceId = {}", deviceId);
                                         }
                                     }
