@@ -1,6 +1,5 @@
 package com.incarcloud.rooster.gather;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -8,9 +7,8 @@ import org.junit.Test;
  */
 public class GatherHostTest {
 
-    @Test
-    @Ignore
-    public void TCPPortTest() throws Exception {
+    @Test(expected = IllegalArgumentException.class)
+    public void testGatherHost() throws Exception {
         final int PORT = 7721;
         // start host
         GatherHost host = new GatherHost();
