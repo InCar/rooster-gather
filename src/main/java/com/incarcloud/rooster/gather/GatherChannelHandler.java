@@ -126,7 +126,7 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
             //s_logger.debug("RSA Public Key: {}", rsaPublicKeyString);
 
             // 2.2 设置公钥和私钥
-            if(StringUtils.isNotBlank(rsaPrivateKeyString) && StringUtils.isNotBlank(rsaPublicKeyString)) {
+            if (StringUtils.isNotBlank(rsaPrivateKeyString) && StringUtils.isNotBlank(rsaPublicKeyString)) {
                 // string转map
                 Map<String, String> mapPrivateKey = GsonFactory.newInstance().createGson().fromJson(rsaPrivateKeyString, new TypeToken<Map<String, String>>() {}.getType());
                 Map<String, String> mapPublicKey = GsonFactory.newInstance().createGson().fromJson(rsaPublicKeyString, new TypeToken<Map<String, String>>() {}.getType());
@@ -150,10 +150,19 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
 
             // 5.设置SecurityKey缓存(限制登陆报文)
             Object packType = metaData.get(Constants.MetaDataMapKey.PACK_TYPE);
-            if(null != packType && Constants.PackType.LOGIN == (int) packType) {
+            if (null != packType && Constants.PackType.LOGIN == (int) packType) {
                 // 缓存动态密钥，用于构建远程命令报文
                 byte[] securityKeyBytes = _parser.getSecurityKey(deviceId);
-                _cacheManager.hset(Constants.CacheNamespaceKey.CACHE_DEVICE_SECURITY_KEY_HASH , deviceId, Base64.getEncoder().encodeToString(securityKeyBytes));
+                // 新增ASE加密CBC模式偏移量
+                byte[] securityKeyOffsetBytes = _parser.getSecurityKeyOffset(deviceId);
+                if (null != securityKeyBytes) {
+                    // 存储结构：{"s": "", "p": ""} --> s: ASE密钥, p: 偏移量
+                    Map<String, String> securityKeyMap = new HashMap<>();
+                    securityKeyMap.put(Constants.AESDataMapKey.S, Base64.getEncoder().encodeToString(securityKeyBytes));
+                    securityKeyMap.put(Constants.AESDataMapKey.P, Base64.getEncoder().encodeToString(securityKeyOffsetBytes));
+                    // 存储到缓存服务器
+                    _cacheManager.hset(Constants.CacheNamespaceKey.CACHE_DEVICE_SECURITY_KEY_HASH, deviceId, GsonFactory.newInstance().createGson().toJson(securityKeyMap));
+                }
             }
 
             // 6.扔到host的消息队列
@@ -193,7 +202,7 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
     /**
      * 客户端主动断开
      *
-     * @param ctx　网络通道
+     * @param ctx 　网络通道
      * @throws Exception
      */
     @Override
@@ -206,11 +215,11 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
      * 获取vin/设备号/协议
      *
      * @param dataPack 数据包
-     * @param parser 解析器
+     * @param parser   解析器
      * @return
      */
     private Map<String, Object> getPackMetaData(DataPack dataPack, IDataParser parser) {
-        if(null == dataPack || null == dataPack.getDataBytes() || null == parser) {
+        if (null == dataPack || null == dataPack.getDataBytes() || null == parser) {
             return null;
         }
         ByteBuf buffer = Unpooled.wrappedBuffer(dataPack.getDataBytes());

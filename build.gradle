@@ -1,5 +1,5 @@
 group 'com.incarcloud'
-version '2.1.32-SNAPSHOT'
+version '2.2.1-SNAPSHOT'
 
 allprojects {
     apply plugin: 'java'
@@ -14,7 +14,6 @@ allprojects {
         MAVEN_URL_SNAPSHOTS = 'http://121.40.157.200:8044/content/repositories/snapshots/'
         MAVEN_AUTH_USERNAME = 'deployment'
         MAVEN_AUTH_PASSWORD = 'AskForAdminIfUpload'
-        roosterVersion = "latest.integration"
     }
 
     repositories {
@@ -56,7 +55,7 @@ allprojects {
 }
 
 dependencies {
-    compile ("com.incarcloud:rooster-shared:${roosterVersion}")
+    compile ("com.incarcloud:rooster-shared:2.2.+")
 
     compile("org.slf4j:slf4j-api:1.7.+")
 
