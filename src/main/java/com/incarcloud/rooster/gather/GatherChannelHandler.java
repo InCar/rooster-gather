@@ -159,7 +159,10 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
                     // 存储结构：{"s": "", "p": ""} --> s: ASE密钥, p: 偏移量
                     Map<String, String> securityKeyMap = new HashMap<>();
                     securityKeyMap.put(Constants.AESDataMapKey.S, Base64.getEncoder().encodeToString(securityKeyBytes));
-                    securityKeyMap.put(Constants.AESDataMapKey.P, Base64.getEncoder().encodeToString(securityKeyOffsetBytes));
+                    // 判断AES加密是否有偏移量
+                    if (null != securityKeyOffsetBytes) {
+                        securityKeyMap.put(Constants.AESDataMapKey.P, Base64.getEncoder().encodeToString(securityKeyOffsetBytes));
+                    }
                     // 存储到缓存服务器
                     _cacheManager.hset(Constants.CacheNamespaceKey.CACHE_DEVICE_SECURITY_KEY_HASH, deviceId, GsonFactory.newInstance().createGson().toJson(securityKeyMap));
                 }
