@@ -117,23 +117,29 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
             // 1.获得设备号
             String deviceId = _parser.getDeviceId(buf);
 
-            // 2.设置平台公钥和私钥数据
-            String rsaPrivateKeyString = _cacheManager.hget(Constants.CacheNamespaceKey.CACHE_DEVICE_PRIVATE_KEY_HASH, deviceId);
-            String rsaPublicKeyString = _cacheManager.hget(Constants.CacheNamespaceKey.CACHE_DEVICE_PUBLIC_KEY_HASH, deviceId);
+            // 2.设置平台公钥和私钥数据(限制激活报文和登陆报文)
+            int packType = _parser.getPackType(buf);
+            if (Constants.PackType.ACTIVATE == packType || Constants.PackType.LOGIN == packType) {
+                // 2.1  查询RSA密钥信息
+                String rsaPrivateKeyString = _cacheManager.hget(Constants.CacheNamespaceKey.CACHE_DEVICE_PRIVATE_KEY_HASH, deviceId);
+                String rsaPublicKeyString = _cacheManager.hget(Constants.CacheNamespaceKey.CACHE_DEVICE_PUBLIC_KEY_HASH, deviceId);
 
-            // 2.1 打印公钥和私钥
-            //s_logger.debug("RSA Private: {}", rsaPrivateKeyString);
-            //s_logger.debug("RSA Public Key: {}", rsaPublicKeyString);
+                // 2.2 打印公钥和私钥
+                //s_logger.debug("RSA Private: {}", rsaPrivateKeyString);
+                //s_logger.debug("RSA Public Key: {}", rsaPublicKeyString);
 
-            // 2.2 设置公钥和私钥
-            if (StringUtils.isNotBlank(rsaPrivateKeyString) && StringUtils.isNotBlank(rsaPublicKeyString)) {
-                // string转map
-                Map<String, String> mapPrivateKey = GsonFactory.newInstance().createGson().fromJson(rsaPrivateKeyString, new TypeToken<Map<String, String>>() {}.getType());
-                Map<String, String> mapPublicKey = GsonFactory.newInstance().createGson().fromJson(rsaPublicKeyString, new TypeToken<Map<String, String>>() {}.getType());
+                // 2.3 设置公钥和私钥
+                if (StringUtils.isNotBlank(rsaPrivateKeyString) && StringUtils.isNotBlank(rsaPublicKeyString)) {
+                    // string转map
+                    Map<String, String> mapPrivateKey = GsonFactory.newInstance().createGson().fromJson(rsaPrivateKeyString, new TypeToken<Map<String, String>>() {
+                    }.getType());
+                    Map<String, String> mapPublicKey = GsonFactory.newInstance().createGson().fromJson(rsaPublicKeyString, new TypeToken<Map<String, String>>() {
+                    }.getType());
 
-                // 设置给解析器
-                _parser.setPrivateKey(deviceId, Base64.getDecoder().decode(mapPrivateKey.get(Constants.RSADataMapKey.N).toString()), Base64.getDecoder().decode(mapPrivateKey.get(Constants.RSADataMapKey.E)));
-                _parser.setPublicKey(deviceId, Base64.getDecoder().decode(mapPublicKey.get(Constants.RSADataMapKey.N).toString()), Long.valueOf(mapPublicKey.get(Constants.RSADataMapKey.E)));
+                    // 设置给解析器
+                    _parser.setPrivateKey(deviceId, Base64.getDecoder().decode(mapPrivateKey.get(Constants.RSADataMapKey.N).toString()), Base64.getDecoder().decode(mapPrivateKey.get(Constants.RSADataMapKey.E)));
+                    _parser.setPublicKey(deviceId, Base64.getDecoder().decode(mapPublicKey.get(Constants.RSADataMapKey.N).toString()), Long.valueOf(mapPublicKey.get(Constants.RSADataMapKey.E)));
+                }
             }
 
             // 3.解析包(分解，校验，解密)
@@ -149,8 +155,7 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
             s_logger.info("MetaData: {}", metaData);
 
             // 5.设置SecurityKey缓存(限制登陆报文)
-            Object packType = metaData.get(Constants.MetaDataMapKey.PACK_TYPE);
-            if (null != packType && Constants.PackType.LOGIN == (int) packType) {
+            if (Constants.PackType.LOGIN == packType) {
                 // 缓存动态密钥，用于构建远程命令报文
                 byte[] securityKeyBytes = _parser.getSecurityKey(deviceId);
                 // 新增ASE加密CBC模式偏移量
