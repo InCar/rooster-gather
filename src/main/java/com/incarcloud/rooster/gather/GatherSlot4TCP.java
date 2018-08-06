@@ -26,7 +26,7 @@ class GatherSlot4TCP extends GatherSlot {
      */
     private static Logger s_logger = LoggerFactory.getLogger(GatherSlot4TCP.class);
 
-    private static final int BACKLOG_COUNT = 1024;
+    private static final int BACKLOG_COUNT = 1024*200;
 
     private int _port;
     private Channel _channel;
@@ -53,7 +53,9 @@ class GatherSlot4TCP extends GatherSlot {
             }
         });
         _bootstrap.option(ChannelOption.SO_BACKLOG, BACKLOG_COUNT);
-        _bootstrap.childOption(ChannelOption.SO_KEEPALIVE, true);
+        _bootstrap.option(ChannelOption.SO_KEEPALIVE, true);
+        _bootstrap.option(ChannelOption.TCP_NODELAY,true) ;
+        _bootstrap.option(ChannelOption.CONNECT_TIMEOUT_MILLIS,3000) ;
     }
 
     @Override
