@@ -53,9 +53,9 @@ class GatherSlot4TCP extends GatherSlot {
             }
         });
         _bootstrap.option(ChannelOption.SO_BACKLOG, BACKLOG_COUNT);
-        _bootstrap.option(ChannelOption.SO_KEEPALIVE, true);
-        _bootstrap.option(ChannelOption.TCP_NODELAY,true) ;
-        _bootstrap.option(ChannelOption.CONNECT_TIMEOUT_MILLIS,3000) ;
+        _bootstrap.option(ChannelOption.CONNECT_TIMEOUT_MILLIS,30000);
+        _bootstrap.childOption(ChannelOption.SO_KEEPALIVE, true);
+        _bootstrap.childOption(ChannelOption.TCP_NODELAY,true) ;
     }
 
     @Override
