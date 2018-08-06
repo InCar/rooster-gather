@@ -108,11 +108,15 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
     }
 
     private void OnRead(ChannelHandlerContext ctx, ByteBuf buf) {
+        // 打印日志
         s_logger.info("Receive Bytes: {}", ByteBufUtil.hexDump(buf));
         s_logger.info("Parser Class: {}", _parser.getClass());
 
+        // 初始化
         Channel channel = ctx.channel();
-        List<DataPack> listPacks = null;
+        List<DataPack> listPacks;
+        Date currentTime = new Date(System.currentTimeMillis()); //接收时间
+
         try {
             // 1.获得设备号
             String deviceId = _parser.getDeviceId(buf);
@@ -174,7 +178,6 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
             }
 
             // 6.扔到host的消息队列
-            Date currentTime = Calendar.getInstance().getTime();
             for (DataPack pack : listPacks) {
                 // 填充接收时间
                 pack.setReceiveTime(currentTime);//数据包的接收时间

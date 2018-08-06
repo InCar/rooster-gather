@@ -373,7 +373,9 @@ public class DataPackPostManager {
                 	// 构建MQ消息体
                     MQMsg mqMsg = new MQMsg(gatherMark, dp.serializeToBytes());
 
+                	// 转换JSON数据结构
                     msgList.add(GsonFactory.newInstance().createGson().toJson(mqMsg).getBytes());
+
                 } catch (UnsupportedEncodingException e) {
                     s_logger.error("Plant not support UTF-8, {}", packWrap.getDataPack());
                 }
@@ -472,7 +474,7 @@ public class DataPackPostManager {
                 }
             }
 
-            // 释放datapack
+            // 释放dataPack资源
             for (DataPackWrap packWrap : packWrapBatch) {
                 packWrap.getDataPack().freeBuf();
             }
