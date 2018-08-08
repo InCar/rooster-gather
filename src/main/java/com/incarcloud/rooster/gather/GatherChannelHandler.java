@@ -118,7 +118,7 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
         List<DataPack> listPacks;
         /*Date currentTime = new Date(System.currentTimeMillis());*/ //接收时间，出现时间错乱问题
         /*Date currentTime = Calendar.getInstance().getTime();*/ //接收时间，出现好多报文时间一样
-        Date currentTime = Date.from(Instant.now());
+        Date gatherTime = Date.from(Instant.now()); //接收时间
 
         try {
             // 1.获得设备号
@@ -183,7 +183,8 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
             // 6.扔到host的消息队列
             for (DataPack pack : listPacks) {
                 // 填充接收时间
-                pack.setReceiveTime(currentTime);//数据包的接收时间
+                pack.setReceiveTime(gatherTime); //数据包的接收时间
+                pack.setGatherTime(gatherTime); //接入网关接收到数据包时间
 
                 // 处理消息队列
                 DataPackWrap dpw = new DataPackWrap(channel, _parser, pack, metaData);
