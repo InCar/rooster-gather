@@ -19,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.SocketAddress;
+import java.time.Instant;
 import java.util.*;
 
 /**
@@ -115,7 +116,9 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
         // 初始化
         Channel channel = ctx.channel();
         List<DataPack> listPacks;
-        Date currentTime = new Date(System.currentTimeMillis()); //接收时间
+        /*Date currentTime = new Date(System.currentTimeMillis());*/ //接收时间，出现时间错乱问题
+        /*Date currentTime = Calendar.getInstance().getTime();*/ //接收时间，出现好多报文时间一样
+        Date currentTime = Date.from(Instant.now());
 
         try {
             // 1.获得设备号
