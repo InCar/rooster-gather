@@ -14,7 +14,6 @@ import org.slf4j.LoggerFactory;
  * UDP协议的采集处理槽
  * 
  * @author 熊广化
- *
  */
 class GatherSlot4UDP extends GatherSlot{
 
@@ -23,8 +22,14 @@ class GatherSlot4UDP extends GatherSlot{
      */
     private static Logger s_logger = LoggerFactory.getLogger(GatherSlot4UDP.class);
 
+    /**
+     * 指定SO_BACKLOG最大值
+     */
     private static final int BACKLOG_COUNT = 1024;
 
+    /**
+     * Netty对象
+     */
     private int _port;
     private Channel _channel;
     private Bootstrap _bootstrap;

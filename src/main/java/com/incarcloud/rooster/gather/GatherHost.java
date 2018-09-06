@@ -59,19 +59,19 @@ public class GatherHost {
      * bigMQ topic
      * 上行-- DataPack TBOX消息
      */
-    private String dataPackTopic ;
+    private String dataPackTopic;
 
     /**
      * bigMQ topic
      * 下行-- remoteTopic 下发TBOX
      */
-    private String remoteTopic ;
+    private String remoteTopic;
 
     /**
      * bigMQ topic
      * 上行-- feedBackTopic 回馈
      */
-    private String feedBackTopic ;
+    private String feedBackTopic;
 
     public GatherHost() {
         this("host" + Calendar.getInstance().getTimeInMillis());
@@ -98,7 +98,7 @@ public class GatherHost {
             return;
         }
 
-        if(null != dataPackPostManager) {
+        if (null != dataPackPostManager) {
             dataPackPostManager.start();
         }
 
@@ -129,7 +129,7 @@ public class GatherHost {
             slot.stop();
         }
 
-        if(null != dataPackPostManager) {
+        if (null != dataPackPostManager) {
             dataPackPostManager.stop();
         }
 
@@ -169,10 +169,11 @@ public class GatherHost {
 
     /**
      * 添加采集槽
+     *
      * @param slotsConf 采集槽配置,格式:   解析器名:通讯协议:监听端口,解析器名:通讯协议:监听端口,......,解析器名:通讯协议:监听端口
      */
-    public void addSlot(String slotsConf) throws Exception{
-        if(StringUtils.isBlank(slotsConf)){
+    public void addSlot(String slotsConf) throws Exception {
+        if (StringUtils.isBlank(slotsConf)) {
             throw new IllegalArgumentException();
         }
 
@@ -183,21 +184,21 @@ public class GatherHost {
             String protocol = s.split(":")[1].trim();
             String port = s.split(":")[2].trim();
 
-            if("tcp".equals(protocol)){
-                GatherSlot slot = new GatherSlot4TCP(Integer.parseInt(port),this);
+            if ("tcp".equals(protocol)) {
+                GatherSlot slot = new GatherSlot4TCP(Integer.parseInt(port), this);
                 slot.setDataParser(parse);
                 slot.setCacheManager(this.getCacheManager());
                 _slots.add(slot);
             }
 
-            if("udp".equals(protocol)){
-                GatherSlot slot = new GatherSlot4UDP(Integer.parseInt(port),this);
+            if ("udp".equals(protocol)) {
+                GatherSlot slot = new GatherSlot4UDP(Integer.parseInt(port), this);
                 slot.setDataParser(parse);
                 slot.setCacheManager(this.getCacheManager());
                 _slots.add(slot);
             }
 
-            if("mqtt".equals(protocol)){
+            if ("mqtt".equals(protocol)) {
                 // TODO
             }
         }

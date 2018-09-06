@@ -6,6 +6,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
+ * Netty与T-Box会话工厂
+ *
  * Created by Kong on 2018/1/8.
  */
 public class SessionFactory {

@@ -1,5 +1,5 @@
 group 'com.incarcloud'
-version '2.2.8-SNAPSHOT'
+version '2.3.0-SNAPSHOT'
 
 allprojects {
     apply plugin: 'java'
@@ -32,21 +32,17 @@ allprojects {
         }
     }
 
-    /*configurations.all {
-        resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
-    }*/
-
-    compileJava{
+    compileJava {
         options.encoding = "utf-8"
         options.compilerArgs << "-Xlint:unchecked"
     }
 
-    compileTestJava{
+    compileTestJava {
         options.encoding = "utf-8"
         options.compilerArgs << "-Xlint:unchecked"
     }
 
-    test{
+    test {
         testLogging {
             events "passed", "skipped", "failed"
             showStandardStreams = true
@@ -55,7 +51,7 @@ allprojects {
 }
 
 dependencies {
-    compile ("com.incarcloud:rooster-shared:2.2.+")
+    compile("com.incarcloud:rooster-shared:2.3.+")
 
     compile("org.slf4j:slf4j-api:1.7.+")
 
@@ -78,7 +74,7 @@ uploadArchives {
             snapshotRepository(url: "${MAVEN_URL_SNAPSHOTS}") {
                 authentication(userName: "${MAVEN_AUTH_USERNAME}", password: "${MAVEN_AUTH_PASSWORD}")
             }
-            pom.project{
+            pom.project {
                 name = '$project.name'
             }
         }

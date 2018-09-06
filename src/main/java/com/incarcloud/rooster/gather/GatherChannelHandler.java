@@ -116,9 +116,7 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
         // 初始化
         Channel channel = ctx.channel();
         List<DataPack> listPacks;
-        /*Date currentTime = new Date(System.currentTimeMillis());*/ //接收时间，出现时间错乱问题
-        /*Date currentTime = Calendar.getInstance().getTime();*/ //接收时间，出现好多报文时间一样
-        Date gatherTime = Date.from(Instant.now()); //接收时间
+        Date receiveTime = Date.from(Instant.now()); //接收时间
 
         try {
             // 1.获得设备号
@@ -183,8 +181,7 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
             // 6.扔到host的消息队列
             for (DataPack pack : listPacks) {
                 // 填充接收时间
-                pack.setReceiveTime(gatherTime); //数据包的接收时间
-                pack.setGatherTime(gatherTime); //接入网关接收到数据包时间
+                pack.setReceiveTime(receiveTime); //数据包的接收时间
 
                 // 处理消息队列
                 DataPackWrap dpw = new DataPackWrap(channel, _parser, pack, metaData);
@@ -208,9 +205,9 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        SocketAddress devAddr = ctx.channel().remoteAddress();
+        SocketAddress address = ctx.channel().remoteAddress();
 
-        s_logger.info("Device({}) connected!", devAddr);
+        s_logger.info("Device({}) connected!", address);
         super.channelActive(ctx);
     }
 

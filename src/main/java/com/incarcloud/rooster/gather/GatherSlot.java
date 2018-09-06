@@ -47,7 +47,7 @@ public abstract class GatherSlot {
      * @param name  采集槽名称
      * @param _host 采集槽所在主机
      */
-    GatherSlot(String name, GatherHost _host) {
+    public GatherSlot(String name, GatherHost _host) {
         this.name = name;
         this._host = _host;
     }
