@@ -7,6 +7,8 @@ import io.netty.channel.Channel;
 import java.util.Map;
 
 /**
+ * 数据包装器
+ *
  * Created by fanbeibei on 2017Da/6/15.
  */
 public class DataPackWrap {

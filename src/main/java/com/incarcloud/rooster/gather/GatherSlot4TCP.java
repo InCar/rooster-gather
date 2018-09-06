@@ -15,9 +15,8 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * TCP协议的采集处理槽
- * 
- * @author 熊广化
  *
+ * @author 熊广化
  */
 class GatherSlot4TCP extends GatherSlot {
 
@@ -26,18 +25,23 @@ class GatherSlot4TCP extends GatherSlot {
      */
     private static Logger s_logger = LoggerFactory.getLogger(GatherSlot4TCP.class);
 
-    private static final int BACKLOG_COUNT = 1024*200;
+    /**
+     * 指定SO_BACKLOG最大值
+     */
+    private static final int BACKLOG_COUNT = 1024 * 200;
 
+    /**
+     * Netty对象
+     */
     private int _port;
     private Channel _channel;
     private ServerBootstrap _bootstrap;
 
     /**
-     * 
      * @param port 端口
      * @param host 宿主
      */
-    GatherSlot4TCP(int port, GatherHost host){
+    GatherSlot4TCP(int port, GatherHost host) {
         super(host);
         GatherSlot _this = this;
         _port = port;
@@ -53,32 +57,30 @@ class GatherSlot4TCP extends GatherSlot {
             }
         });
         _bootstrap.option(ChannelOption.SO_BACKLOG, BACKLOG_COUNT);
-        _bootstrap.option(ChannelOption.CONNECT_TIMEOUT_MILLIS,30000);
+        _bootstrap.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 30000);
         _bootstrap.childOption(ChannelOption.SO_KEEPALIVE, true);
-        _bootstrap.childOption(ChannelOption.TCP_NODELAY,true) ;
+        _bootstrap.childOption(ChannelOption.TCP_NODELAY, true);
     }
 
     @Override
-    protected void start0(){
+    protected void start0() {
         ChannelFuture future = _bootstrap.bind(_port);
         _channel = future.channel();
         _bootstrap = null; // 可以释放掉了
         try {
             future.sync();
 
-            s_logger.info(getName()+" start success! protocol: {}, listen on port {}.", _dataParser.getClass(), _port);
-        }
-        catch (InterruptedException ex){
+            s_logger.info(getName() + " start success! protocol: {}, listen on port {}.", _dataParser.getClass(), _port);
+        } catch (InterruptedException ex) {
             throw new RuntimeException(ex);
         }
     }
 
     @Override
-    public void stop(){
+    public void stop() {
         try {
             _channel.closeFuture().sync();
-        }
-        catch (InterruptedException ex){
+        } catch (InterruptedException ex) {
             throw new RuntimeException(ex);
         }
     }
@@ -89,7 +91,7 @@ class GatherSlot4TCP extends GatherSlot {
     }
 
     @Override
-    public int getListenPort(){
+    public int getListenPort() {
         return _port;
     }
 }
