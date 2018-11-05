@@ -185,7 +185,7 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
                     String cacheVin = this._cacheManager.hget(Constants.CacheNamespaceKey.CACHE_DEVICE_ID_HASH, deviceId);
                     if (StringUtils.isNotBlank(cacheVin) && StringUtils.equals(cacheVin, vin)) {
                         this._cacheManager.hset(Constants.CacheNamespaceKey.CACHE_VEHICLE_VIN_HASH, cacheVin, deviceId);
-                        s_logger.info("Normal Login, Activated success: deviceId = {}, vin = {}", deviceId, vin);
+                        s_logger.info("Normal login first, activated success: deviceId = {}, vin = {}", deviceId, vin);
                     }
                 }
             }
