@@ -142,8 +142,8 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
                     }.getType());
 
                     // 设置给解析器
-                    _parser.setPrivateKey(deviceId, Base64.getDecoder().decode(mapPrivateKey.get(Constants.RSADataMapKey.N).toString()), Base64.getDecoder().decode(mapPrivateKey.get(Constants.RSADataMapKey.E)));
-                    _parser.setPublicKey(deviceId, Base64.getDecoder().decode(mapPublicKey.get(Constants.RSADataMapKey.N).toString()), Long.valueOf(mapPublicKey.get(Constants.RSADataMapKey.E)));
+                    _parser.setPrivateKey(deviceId, Base64.getDecoder().decode(mapPrivateKey.get(Constants.RSADataMapKey.N)), Base64.getDecoder().decode(mapPrivateKey.get(Constants.RSADataMapKey.E)));
+                    _parser.setPublicKey(deviceId, Base64.getDecoder().decode(mapPublicKey.get(Constants.RSADataMapKey.N)), Long.valueOf(mapPublicKey.get(Constants.RSADataMapKey.E)));
                 }
             }
 
@@ -159,7 +159,7 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
             metaData = getPackMetaData(listPacks.get(0), _parser);
             s_logger.info("MetaData: {}", metaData);
 
-            // 5.设置SecurityKey缓存(限制登陆报文)
+            // 5.设置SecurityKey缓存(限登陆报文)
             if (Constants.PackType.LOGIN == packType) {
                 // 缓存动态密钥，用于构建远程命令报文
                 byte[] securityKeyBytes = _parser.getSecurityKey(deviceId);
@@ -175,6 +175,18 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
                     }
                     // 存储到缓存服务器
                     _cacheManager.hset(Constants.CacheNamespaceKey.CACHE_DEVICE_SECURITY_KEY_HASH, deviceId, GsonFactory.newInstance().createGson().toJson(securityKeyMap));
+                }
+
+                // 设备只能被激活一次
+                String vin = (String) metaData.get(Constants.MetaDataMapKey.VIN);
+                String cacheDeviceId = this._cacheManager.hget(Constants.CacheNamespaceKey.CACHE_VEHICLE_VIN_HASH, vin);
+                if (StringUtils.isBlank(cacheDeviceId)) {
+                    // 第一次登录成功说明激活成功，维护VIN与设备号的关系
+                    String cacheVin = this._cacheManager.hget(Constants.CacheNamespaceKey.CACHE_DEVICE_ID_HASH, deviceId);
+                    if (StringUtils.isNotBlank(cacheVin) && StringUtils.equals(cacheVin, vin)) {
+                        this._cacheManager.hset(Constants.CacheNamespaceKey.CACHE_VEHICLE_VIN_HASH, cacheVin, deviceId);
+                        s_logger.info("Normal login first, activated success: deviceId = {}, vin = {}", deviceId, vin);
+                    }
                 }
             }
 
