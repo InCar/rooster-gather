@@ -106,7 +106,7 @@ public class DataPackPostManager {
     private ThreadGroup threadGroup;
 
 
-    private static final int BATCH_GET_SIZE = 100 ;
+    private static final int BATCH_GET_SIZE = 100;
 
     /**
      * @param host 所属主机
@@ -175,9 +175,9 @@ public class DataPackPostManager {
                 lastInQueueCount = _inQueueCount;
                 lastOutQueueCount = _outQueueCount;
 
-                s_logger.debug(DataPackPostManager.this.name + " queue  contains  "
-                        + remainQueueCount + " datapack for  send in queue,last " + period + " second " + newInQueueCount
-                        + " in , " + newOutQueueCount + "  out  !");
+                s_logger.debug(DataPackPostManager.this.name + " queue contains "
+                        + remainQueueCount + " datapack for send in queue, last " + period + " second " + newInQueueCount
+                        + " in, " + newOutQueueCount + " out!");
 
 
             }
@@ -189,9 +189,10 @@ public class DataPackPostManager {
          * 每秒定时处理，及时消费
          */
         consumerExecutorService.scheduleAtFixedRate(new Runnable() {
+
             @Override
             public void run() {
-                IBigMQ bigMQ = host.getBigMQ() ;
+                IBigMQ bigMQ = host.getBigMQ();
                 try {
                     // 循环获取MQ消息
                     while (true) {
@@ -202,8 +203,8 @@ public class DataPackPostManager {
                         }
 
                         // 处理MQ消息逻辑----响应给TBOX
-                        if (null != mqMsgs && mqMsgs.size() > 0){
-                            for (byte[] mqMsg : mqMsgs){
+                        if (null != mqMsgs && mqMsgs.size() > 0) {
+                            for (byte[] mqMsg : mqMsgs) {
                                 try {
                                     String json = new String(mqMsg);
                                     s_logger.info("Remote msg: {}", json);
@@ -216,14 +217,11 @@ public class DataPackPostManager {
                                     }
 
                                     // 获得设备ID
-                                    String deviceId = remoteCmdSendMsg.getDeviceId() ;
+                                    String deviceId = remoteCmdSendMsg.getDeviceId();
                                     if (StringUtils.isBlank(deviceId)) {
                                         s_logger.error("Remote msg body of deviceId is null.");
                                         continue;
                                     }
-
-                                    // 流水号
-                                    Integer packId = remoteCmdSendMsg.getPackId();
 
                                     // 远程命令内容
                                     byte[] bytes = Base64.getDecoder().decode(remoteCmdSendMsg.getCmdString());
@@ -233,47 +231,46 @@ public class DataPackPostManager {
                                     s_logger.info("SessionId: {}", sessionId);
 
                                     // 下发命令
-                                    if (null != sessionId){
+                                    if (null != sessionId) {
                                         // sessionId 与 Session 对应，如果sessionId 存在，Session不存在，说明有异常
-                                        Session session = SessionFactory.getInstance().getSession(sessionId) ;
+                                        Session session = SessionFactory.getInstance().getSession(sessionId);
                                         s_logger.info("Session: {}", session);
                                         if (null == session) {
                                             s_logger.error("Session is nonexistence! deviceId: {}, sessionId:{}", deviceId, sessionId);
                                             continue;
                                         }
-                                        session.write(bytes).addListener(channelFuture->{
-                                            if (channelFuture.isSuccess()){
+                                        session.write(bytes).addListener(channelFuture -> {
+                                            if (channelFuture.isSuccess()) {
                                                 s_logger.info("Send msg to T-Box Success: deviceId: {}, bytes: {}", deviceId, new String(bytes));
                                                 RemoteCmdFeedbackMsg feedbackMsg = new RemoteCmdFeedbackMsg(remoteCmdSendMsg, 1);
-                                                bigMQ.post(host.getFeedBackTopic(),GsonFactory.newInstance().createGson().toJson(feedbackMsg).getBytes()) ;
-                                            }else{
+                                                bigMQ.post(host.getFeedBackTopic(), GsonFactory.newInstance().createGson().toJson(feedbackMsg).getBytes());
+                                            } else {
                                                 s_logger.info("Send msg to T-Box Error: deviceId:{}, bytes: {}", deviceId, new String(bytes));
                                                 RemoteCmdFeedbackMsg feedbackMsg = new RemoteCmdFeedbackMsg(remoteCmdSendMsg, 0);
-                                                bigMQ.post(host.getFeedBackTopic(),GsonFactory.newInstance().createGson().toJson(feedbackMsg).getBytes()) ;
+                                                bigMQ.post(host.getFeedBackTopic(), GsonFactory.newInstance().createGson().toJson(feedbackMsg).getBytes());
                                             }
                                         });
                                     }
-                                }catch (Exception e){
-                                    s_logger.error("Remote message err : {}",new String(mqMsg));
+                                } catch (Exception e) {
+                                    s_logger.error("Remote message err : {}", new String(mqMsg));
                                 }
                             }
                         }
                         // 当查询出来的记录条数 小于 查询量，不再去循环查询
-                        if (null == mqMsgs || mqMsgs.size() < BATCH_GET_SIZE){
+                        if (null == mqMsgs || mqMsgs.size() < BATCH_GET_SIZE) {
                             break;
                         }
                     }
-                }catch (Exception e){
+                } catch (Exception e) {
                     System.out.println("No Consumer!!!");
                 }
             }
-        }, 1, 1, TimeUnit.SECONDS) ;
+        }, 1, 1, TimeUnit.SECONDS);
 
     }
 
-    public void stop(){
+    public void stop() {
         scheduledExecutorService.shutdownNow();
-
     }
 
     /**
@@ -305,12 +302,11 @@ public class DataPackPostManager {
 
             s_logger.debug("## QueueConsumerThread start!!!");
 
-            List<DataPackWrap> packWrapList = new ArrayList<DataPackWrap>(BATCH_POST_SIZE);
+            List<DataPackWrap> packWrapList = new ArrayList<>(BATCH_POST_SIZE);
 
             while (true) {
-                //取数据包
                 try {
-
+                    //取数据包
                     DataPackWrap packWrap = cacheQueue.poll();
                     if (null != packWrap) {
                         packWrapList.add(packWrap);
@@ -333,7 +329,8 @@ public class DataPackPostManager {
                         packWrapList.clear();
                     }
 
-                    packWrap = cacheQueue.take();//阻塞住等待新数据，开始下一个批量
+                    //阻塞住等待新数据，开始下一个批量
+                    packWrap = cacheQueue.take();
                     packWrapList.add(packWrap);
                     outQueueCount.incrementAndGet();
 
@@ -363,17 +360,17 @@ public class DataPackPostManager {
             for (DataPackWrap packWrap : packWrapBatch) {
                 DataPack dp = packWrap.getDataPack();
                 try {
-                	// 根据deviceId回复设备数据
-                	String gatherMark = dp.getMark();
-                	if(null != packWrap && null != packWrap.getMetaData()){
+                    // 根据deviceId回复设备数据
+                    String gatherMark = dp.getMark();
+                    if (null != packWrap && null != packWrap.getMetaData()) {
                         String deviceId = (String) packWrap.getMetaData().get(Constants.MetaDataMapKey.DEVICE_ID);
-                		gatherMark += "|" + deviceId;
-                	}
+                        gatherMark += "|" + deviceId;
+                    }
 
-                	// 构建MQ消息体
+                    // 构建MQ消息体
                     MQMsg mqMsg = new MQMsg(gatherMark, dp.serializeToBytes());
 
-                	// 转换JSON数据结构
+                    // 转换JSON数据结构
                     msgList.add(GsonFactory.newInstance().createGson().toJson(mqMsg).getBytes());
 
                 } catch (UnsupportedEncodingException e) {
@@ -394,14 +391,14 @@ public class DataPackPostManager {
                 Map<String, Object> metaData = packWrapBatch.get(i).getMetaData();
 
                 try {
-
-                    if (null == sendResult.getException()) {// 正常返回
+                    // 正常返回
+                    if (null == sendResult.getException()) {
                         // 保存数据到MQ成功
                         s_logger.debug("Success send to MQ: {}", sendResult.getData());
 
                         // 激活流程
                         ByteBuf resp = null;
-                        if(null != metaData) {
+                        if (null != metaData) {
                             // 获得设备号
                             String deviceId = (String) metaData.get(Constants.MetaDataMapKey.DEVICE_ID);
                             int packType = (int) metaData.get(Constants.MetaDataMapKey.PACK_TYPE);
@@ -412,30 +409,24 @@ public class DataPackPostManager {
                                     /* 激活数据包 */
                                     //　获得车辆标识
                                     String vin = (String) metaData.get(Constants.MetaDataMapKey.VIN);
-                                    String cacheVin = cacheManager.hget(Constants.CacheNamespaceKey.CACHE_DEVICE_ID_HASH , deviceId);
+                                    String cacheVin = cacheManager.hget(Constants.CacheNamespaceKey.CACHE_DEVICE_ID_HASH, deviceId);
 
                                     // 打印车辆信息
                                     s_logger.info("Activate T-Box: deviceId = {}, vin = {}, cacheVin = {}", deviceId, vin, cacheVin);
 
-                                    // 设备只能被激活一次
-                                    String cacheDeviceId = cacheManager.hget(Constants.CacheNamespaceKey.CACHE_VEHICLE_VIN_HASH , vin);
-                                    if(StringUtils.isNotBlank(cacheDeviceId)) {
+                                    // 返回设备激活失败状态
+                                    String cacheDeviceId = cacheManager.hget(Constants.CacheNamespaceKey.CACHE_VEHICLE_VIN_HASH, vin);
+                                    if (StringUtils.isNotBlank(cacheDeviceId)) {
                                         // 已激活设备不能再次激活
                                         resp = dataParser.createResponse(dataPack, ERespReason.ACTIVATED);
                                         s_logger.info("Activated failed: the device(id={}) has been activated.", deviceId);
 
                                     } else {
                                         // 判断deviceId和vin在缓存中是否匹配
-                                        if(StringUtils.isNotBlank(cacheVin) && !StringUtils.equals(cacheVin, vin)) {
+                                        if (StringUtils.isNotBlank(cacheVin) && !StringUtils.equals(cacheVin, vin)) {
                                             // 激活失败，原因：TBox未安装到指定车辆
                                             resp = dataParser.createResponse(dataPack, ERespReason.MISMATCH);
                                             s_logger.info("Activated failed: the vin for this device(id={}) is error.", deviceId);
-                                        }
-
-                                        // 激活成功，维护VIN找设备号
-                                        if(StringUtils.isNotBlank(cacheVin) && StringUtils.equals(cacheVin, vin)) {
-                                            cacheManager.hset(Constants.CacheNamespaceKey.CACHE_VEHICLE_VIN_HASH , cacheVin, deviceId);
-                                            s_logger.info("Activated success: deviceId = {}", deviceId);
                                         }
                                     }
                                     break;
@@ -447,8 +438,8 @@ public class DataPackPostManager {
                             }
                         }
 
-                        // 其他情况
-                        if(null == resp) {
+                        // 创建正常响应数据包
+                        if (null == resp) {
                             resp = dataParser.createResponse(dataPack, ERespReason.OK);
                         }
                         s_logger.info("Success send resp: {}", ByteBufUtil.hexDump(resp));
@@ -483,7 +474,7 @@ public class DataPackPostManager {
 
         /**
          * 发送单个数据包到消息中间件<br>
-         *
+         * <p>
          * 该方法发现未被调用，已在batchSendDataPackToMQ处理激活逻辑，标注废弃
          */
         @Deprecated
@@ -501,26 +492,26 @@ public class DataPackPostManager {
                 MQMsg mqMsg = new MQMsg(dp.getMark(), dp.serializeToBytes());
                 s_logger.debug("--> {}", mqMsg);
 
-                MqSendResult sendResult = bigMQ.post(host.getDataPackTopic(),GsonFactory.newInstance().createGson().toJson(mqMsg).getBytes()) ;
+                MqSendResult sendResult = bigMQ.post(host.getDataPackTopic(), GsonFactory.newInstance().createGson().toJson(mqMsg).getBytes());
 
                 if (null == sendResult.getException()) {// 正常返回
                     s_logger.debug("Success send to MQ:" + sendResult.getData());
                     ByteBuf resp = dataParser.createResponse(dataPack, ERespReason.OK);
-                    s_logger.debug("Success send resp:"+ByteBufUtil.hexDump(resp));
+                    s_logger.debug("Success send resp:" + ByteBufUtil.hexDump(resp));
 
                     if (null != resp) {//需要回应设备
                         channel.writeAndFlush(resp);
-                    }else{
+                    } else {
 
                     }
                 } else {
                     s_logger.error("Failed send to MQ:" + sendResult.getException().getMessage());
                     ByteBuf resp = dataParser.createResponse(dataPack, ERespReason.ERROR);
-                    s_logger.error("Failed send resp:"+ByteBufUtil.hexDump(resp));
+                    s_logger.error("Failed send resp:" + ByteBufUtil.hexDump(resp));
 
                     if (null != resp) {//需要回应设备
                         channel.writeAndFlush(resp);
-                    }else{
+                    } else {
 
                     }
                 }
