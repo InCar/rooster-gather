@@ -2,6 +2,11 @@ package com.incarcloud.rooster.gather;
 
 import com.incarcloud.rooster.cache.ICacheManager;
 import com.incarcloud.rooster.datapack.IDataParser;
+import com.incarcloud.rooster.mq.IBigMQ;
+import com.incarcloud.rooster.mq.RsaActivationMsg;
+import com.incarcloud.rooster.share.Constants;
+import com.incarcloud.rooster.util.GsonFactory;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.InvalidClassException;
 import java.util.Date;
@@ -135,6 +140,18 @@ public abstract class GatherSlot {
      */
     public void putToCacheQueue(DataPackWrap packWrap) {
         _host.putToCacheQueue(packWrap);
+    }
+
+    /**
+     * 将在线激活信息丢到MQ
+     *
+     * @param activationMsg 在线激活信息
+     */
+    public void putToActivationMsgToMQ(RsaActivationMsg activationMsg) throws Exception {
+        if(null != activationMsg && null != _host && StringUtils.isNotBlank(_host.getOnlineActivationTopic())) {
+            IBigMQ bigMQ = _host.getBigMQ();
+            bigMQ.post(_host.getOnlineActivationTopic(), GsonFactory.newInstance().createGson().toJson(activationMsg).getBytes(Constants.DEFAULT_CHARSET));
+        }
     }
 
     /**
