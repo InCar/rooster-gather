@@ -434,7 +434,7 @@ public class DataPackPostManager {
                                         resp = dataParser.createResponse(dataPack, ERespReason.MISMATCH_DEVICE_SN);
                                         //s_logger.info("Activated failed: the device(id={}) mismatches sn.[{}-{}]", deviceId, deviceCode, cacheDeviceCode);
 
-                                    } else if (StringUtils.isBlank(cacheVin)) {
+                                    } else if (StringUtils.isNotBlank(cacheVin)) {
                                         // 原因三：VIN已经激活
                                         resp = dataParser.createResponse(dataPack, ERespReason.VIN_ACTIVATED);
                                         //s_logger.info("Activated failed: the device(id={}) has been activated.", deviceId);

@@ -189,7 +189,7 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
                     // 原因二：T-BOX的SN与IMEI绑定关系不正确
                     s_logger.info("Activated failed: the device(id={}) mismatches sn.[{}-{}]", deviceId, deviceCode, cacheDeviceCode);
 
-                } else if (StringUtils.isBlank(cacheVin)) {
+                } else if (!StringUtils.isNotBlank(cacheVin)) {
                     // 原因三：VIN已经激活
                     s_logger.info("Activated failed: the device(id={}) has been activated.", deviceId);
 
