@@ -177,22 +177,25 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
                 // 获取缓存中的T-BOX软件包适配车型
                 String cacheAdaptedSeries = _cacheManager.hget(Constants.CacheNamespaceKey.CACHE_DEVICE_ADAPTED_SERIES_HASH, deviceId);
 
+                // 打印车辆设备激活信息
+                s_logger.info("Activate T-Box: deviceId = {}, deviceCode = {}, cacheAdaptedSeries = {}", deviceId, deviceCode, vin, cacheAdaptedSeries);
+
                 // 如果验证失败，不创建RSA公钥信息
-                if (StringUtils.isNotBlank(cacheDeviceCode)) {
+                if (StringUtils.isBlank(cacheDeviceCode)) {
                     // 原因一：T-BOX不存在
-                    //s_logger.info("Activated failed: the device(id={}) is non-exist.", deviceId);
+                    s_logger.info("Activated failed: the device(id={}) is non-exist.", deviceId);
 
                 } else if (!StringUtils.equals(deviceCode, cacheDeviceCode)) {
                     // 原因二：T-BOX的SN与IMEI绑定关系不正确
-                    //s_logger.info("Activated failed: the device(id={}) mismatches sn.", deviceId);
+                    s_logger.info("Activated failed: the device(id={}) mismatches sn.[{}-{}]", deviceId, deviceCode, cacheDeviceCode);
 
-                } else if (StringUtils.isNotBlank(cacheVin)) {
+                } else if (StringUtils.isBlank(cacheVin)) {
                     // 原因三：VIN已经激活
-                    //s_logger.info("Activated failed: the device(id={}) has been activated.", deviceId);
+                    s_logger.info("Activated failed: the device(id={}) has been activated.", deviceId);
 
-                } else if (StringUtils.equals(adaptedSeries, cacheAdaptedSeries)) {
+                } else if (!StringUtils.equals(adaptedSeries, cacheAdaptedSeries)) {
                     // 原因四：T-BOX软件版本不适配该车系
-                    //s_logger.info("Activated failed: the device(id={}) is not adapting this series.", deviceId);
+                    s_logger.info("Activated failed: the device(id={}) is not adapting this series.[{}-{}]", deviceId, adaptedSeries, cacheAdaptedSeries);
 
                 } else {
                     // 5.1 临时创建一份新RSA密钥，存储到Redis
