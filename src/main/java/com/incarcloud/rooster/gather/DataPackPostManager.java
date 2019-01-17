@@ -406,9 +406,9 @@ public class DataPackPostManager {
                             switch (packType) {
                                 case Constants.PackType.ACTIVATE:
                                     /* 激活数据包 */
+                                    String vin = (String) metaData.get(Constants.MetaDataMapKey.VIN);
                                     String deviceId = (String) metaData.get(Constants.MetaDataMapKey.DEVICE_ID);
                                     String deviceCode = (String) metaData.get(Constants.MetaDataMapKey.DEVICE_SN);
-                                    String vin = (String) metaData.get(Constants.MetaDataMapKey.VIN);
                                     String adaptedSeries = (String) metaData.get(Constants.MetaDataMapKey.ADAPTED_SERIES_TYPE);
 
                                     // 获取缓存中的设备ID
@@ -437,13 +437,17 @@ public class DataPackPostManager {
                                     } else if (StringUtils.isNotBlank(cacheVin)) {
                                         // 原因三：VIN已经激活
                                         resp = dataParser.createResponse(dataPack, ERespReason.VIN_ACTIVATED);
-                                        //s_logger.info("Activated failed: the device(id={}) has been activated.", deviceId);
+                                        //s_logger.info("Activated failed: the device(id={}) has been activated.[cacheVin={cacheVin}]", deviceId, cacheVin);
 
-                                    } else if (!StringUtils.equals(adaptedSeries, cacheAdaptedSeries)) {
+                                    } else if (null != cacheAdaptedSeries && !StringUtils.equals(adaptedSeries, cacheAdaptedSeries)) {
                                         // 原因四：T-BOX软件版本不适配该车系
                                         resp = dataParser.createResponse(dataPack, ERespReason.NON_ADAPTED_SERIES);
                                         //s_logger.info("Activated failed: the device(id={}) is not adapting this series.[{}-{}]", deviceId, adaptedSeries, cacheAdaptedSeries);
                                     }
+
+                                    // 第一次激活验证成功，维护设备号与车架号的关系
+                                    cacheManager.hset(Constants.CacheNamespaceKey.CACHE_VEHICLE_VIN_HASH, deviceId, vin);
+
                                     break;
                                 case Constants.PackType.LOGIN:
                                     /* 登陆数据包 */

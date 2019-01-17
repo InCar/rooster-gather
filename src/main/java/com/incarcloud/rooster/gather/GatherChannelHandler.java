@@ -189,11 +189,11 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
                     // 原因二：T-BOX的SN与IMEI绑定关系不正确
                     s_logger.info("Activated failed: the device(id={}) mismatches sn.[{}-{}]", deviceId, deviceCode, cacheDeviceCode);
 
-                } else if (!StringUtils.isNotBlank(cacheVin)) {
+                } else if (StringUtils.isNotBlank(cacheVin)) {
                     // 原因三：VIN已经激活
-                    s_logger.info("Activated failed: the device(id={}) has been activated.", deviceId);
+                    s_logger.info("Activated failed: the device(id={}) has been activated.[cacheVin={cacheVin}]", deviceId, cacheVin);
 
-                } else if (!StringUtils.equals(adaptedSeries, cacheAdaptedSeries)) {
+                } else if (null != cacheAdaptedSeries && !StringUtils.equals(adaptedSeries, cacheAdaptedSeries)) {
                     // 原因四：T-BOX软件版本不适配该车系
                     s_logger.info("Activated failed: the device(id={}) is not adapting this series.[{}-{}]", deviceId, adaptedSeries, cacheAdaptedSeries);
 
@@ -213,9 +213,13 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
                     _cacheManager.hset(Constants.CacheNamespaceKey.CACHE_DEVICE_PRIVATE_KEY_HASH, deviceId, GsonFactory.newInstance().createGson().toJson(privateKeyMap));
                     _cacheManager.hset(Constants.CacheNamespaceKey.CACHE_DEVICE_PUBLIC_KEY_HASH, deviceId, GsonFactory.newInstance().createGson().toJson(publicKeyMap));
 
-                    // 5.3 发送MQ消息交给Transfer继续处理
-                    activationMsg.setDeviceCode((String) metaData.get(Constants.MetaDataMapKey.DEVICE_SN));
-                    activationMsg.setVin((String) metaData.get(Constants.MetaDataMapKey.VIN));
+                    // 5.3 设置给解析器
+                    _parser.setPrivateKey(deviceId, Base64.getDecoder().decode(activationMsg.getRsaPrivateModulus()), Base64.getDecoder().decode(activationMsg.getRsaPrivateExponent()));
+                    _parser.setPublicKey(deviceId, Base64.getDecoder().decode(activationMsg.getRsaPublicModulus()), Long.valueOf(activationMsg.getRsaPublicExponent()));
+
+                    // 5.4 发送MQ消息交给Transfer继续处理
+                    activationMsg.setDeviceCode(deviceCode);
+                    activationMsg.setVin(vin);
 
                     _slot.putToActivationMsgToMQ(activationMsg);
                 }
@@ -235,6 +239,7 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
                     if (null != securityKeyOffsetBytes) {
                         securityKeyMap.put(Constants.AESDataMapKey.P, Base64.getEncoder().encodeToString(securityKeyOffsetBytes));
                     }
+
                     // 存储到缓存服务器
                     _cacheManager.hset(Constants.CacheNamespaceKey.CACHE_DEVICE_SECURITY_KEY_HASH, deviceId, GsonFactory.newInstance().createGson().toJson(securityKeyMap));
                 }
@@ -243,7 +248,7 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
                 String vin = (String) metaData.get(Constants.MetaDataMapKey.VIN);
                 String cacheDeviceId = this._cacheManager.hget(Constants.CacheNamespaceKey.CACHE_VEHICLE_VIN_HASH, vin);
                 if (StringUtils.isBlank(cacheDeviceId)) {
-                    // 第一次登录成功说明激活成功，维护VIN与设备号的关系
+                    // 第一次登录成功说明激活成功，维护车架号与设备号的关系
                     String cacheVin = this._cacheManager.hget(Constants.CacheNamespaceKey.CACHE_DEVICE_ID_HASH, deviceId);
                     if (StringUtils.isNotBlank(cacheVin) && StringUtils.equals(cacheVin, vin)) {
                         this._cacheManager.hset(Constants.CacheNamespaceKey.CACHE_VEHICLE_VIN_HASH, cacheVin, deviceId);
