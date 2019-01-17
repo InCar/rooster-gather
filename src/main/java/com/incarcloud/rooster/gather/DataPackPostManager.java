@@ -243,11 +243,11 @@ public class DataPackPostManager {
                                             if (channelFuture.isSuccess()) {
                                                 s_logger.info("Send msg to T-Box Success: deviceId: {}, bytes: {}", deviceId, new String(bytes));
                                                 RemoteCmdFeedbackMsg feedbackMsg = new RemoteCmdFeedbackMsg(remoteCmdSendMsg, 1);
-                                                bigMQ.post(host.getFeedBackTopic(), GsonFactory.newInstance().createGson().toJson(feedbackMsg).getBytes());
+                                                bigMQ.post(host.getRemoteFeedBackTopic(), GsonFactory.newInstance().createGson().toJson(feedbackMsg).getBytes());
                                             } else {
                                                 s_logger.info("Send msg to T-Box Error: deviceId:{}, bytes: {}", deviceId, new String(bytes));
                                                 RemoteCmdFeedbackMsg feedbackMsg = new RemoteCmdFeedbackMsg(remoteCmdSendMsg, 0);
-                                                bigMQ.post(host.getFeedBackTopic(), GsonFactory.newInstance().createGson().toJson(feedbackMsg).getBytes());
+                                                bigMQ.post(host.getRemoteFeedBackTopic(), GsonFactory.newInstance().createGson().toJson(feedbackMsg).getBytes());
                                             }
                                         });
                                     }
@@ -399,36 +399,55 @@ public class DataPackPostManager {
                         // 激活流程
                         ByteBuf resp = null;
                         if (null != metaData) {
-                            // 获得设备号
-                            String deviceId = (String) metaData.get(Constants.MetaDataMapKey.DEVICE_ID);
+                            // 数据包类型
                             int packType = (int) metaData.get(Constants.MetaDataMapKey.PACK_TYPE);
 
                             // 判断报文类型
                             switch (packType) {
                                 case Constants.PackType.ACTIVATE:
                                     /* 激活数据包 */
-                                    //　获得车辆标识
                                     String vin = (String) metaData.get(Constants.MetaDataMapKey.VIN);
+                                    String deviceId = (String) metaData.get(Constants.MetaDataMapKey.DEVICE_ID);
+                                    String deviceCode = (String) metaData.get(Constants.MetaDataMapKey.DEVICE_SN);
+                                    String adaptedSeries = (String) metaData.get(Constants.MetaDataMapKey.ADAPTED_SERIES_TYPE);
+
+                                    // 获取缓存中的设备ID
+                                    String cacheDeviceCode = cacheManager.hget(Constants.CacheNamespaceKey.CACHE_DEVICE_SN_HASH, deviceId);
+
+                                    // 获取缓存中的车架号
                                     String cacheVin = cacheManager.hget(Constants.CacheNamespaceKey.CACHE_DEVICE_ID_HASH, deviceId);
 
-                                    // 打印车辆信息
-                                    s_logger.info("Activate T-Box: deviceId = {}, vin = {}, cacheVin = {}", deviceId, vin, cacheVin);
+                                    // 获取缓存中的T-BOX软件包适配车型
+                                    String cacheAdaptedSeries = cacheManager.hget(Constants.CacheNamespaceKey.CACHE_DEVICE_ADAPTED_SERIES_HASH, deviceId);
+
+                                    // 打印车辆设备激活信息
+                                    //s_logger.info("Activate T-Box: deviceId = {}, deviceCode = {}, cacheAdaptedSeries = {}", deviceId, deviceCode, vin, cacheAdaptedSeries);
 
                                     // 返回设备激活失败状态
-                                    String cacheDeviceId = cacheManager.hget(Constants.CacheNamespaceKey.CACHE_VEHICLE_VIN_HASH, vin);
-                                    if (StringUtils.isNotBlank(cacheDeviceId)) {
-                                        // 已激活设备不能再次激活
-                                        resp = dataParser.createResponse(dataPack, ERespReason.ACTIVATED);
-                                        s_logger.info("Activated failed: the device(id={}) has been activated.", deviceId);
+                                    if (StringUtils.isBlank(cacheDeviceCode)) {
+                                        // 原因一：T-BOX不存在
+                                        resp = dataParser.createResponse(dataPack, ERespReason.NON_EXIST_DEVICE);
+                                        //s_logger.info("Activated failed: the device(id={}) is non-exist.", deviceId);
 
-                                    } else {
-                                        // 判断deviceId和vin在缓存中是否匹配
-                                        if (StringUtils.isNotBlank(cacheVin) && !StringUtils.equals(cacheVin, vin)) {
-                                            // 激活失败，原因：TBox未安装到指定车辆
-                                            resp = dataParser.createResponse(dataPack, ERespReason.MISMATCH);
-                                            s_logger.info("Activated failed: the vin for this device(id={}) is error.", deviceId);
-                                        }
+                                    } else if (!StringUtils.equals(deviceCode, cacheDeviceCode)) {
+                                        // 原因二：T-BOX的SN与IMEI绑定关系不正确
+                                        resp = dataParser.createResponse(dataPack, ERespReason.MISMATCH_DEVICE_SN);
+                                        //s_logger.info("Activated failed: the device(id={}) mismatches sn.[{}-{}]", deviceId, deviceCode, cacheDeviceCode);
+
+                                    } else if (StringUtils.isNotBlank(cacheVin)) {
+                                        // 原因三：VIN已经激活
+                                        resp = dataParser.createResponse(dataPack, ERespReason.VIN_ACTIVATED);
+                                        //s_logger.info("Activated failed: the device(id={}) has been activated.[cacheVin={cacheVin}]", deviceId, cacheVin);
+
+                                    } else if (null != cacheAdaptedSeries && !StringUtils.equals(adaptedSeries, cacheAdaptedSeries)) {
+                                        // 原因四：T-BOX软件版本不适配该车系
+                                        resp = dataParser.createResponse(dataPack, ERespReason.NON_ADAPTED_SERIES);
+                                        //s_logger.info("Activated failed: the device(id={}) is not adapting this series.[{}-{}]", deviceId, adaptedSeries, cacheAdaptedSeries);
                                     }
+
+                                    // 第一次激活验证成功，维护设备号与车架号的关系
+                                    cacheManager.hset(Constants.CacheNamespaceKey.CACHE_VEHICLE_VIN_HASH, deviceId, vin);
+
                                     break;
                                 case Constants.PackType.LOGIN:
                                     /* 登陆数据包 */

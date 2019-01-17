@@ -57,21 +57,27 @@ public class GatherHost {
 
     /**
      * bigMQ topic
-     * 上行-- DataPack TBOX消息
+     * 上行-- DataPack T-BOX上报数据
      */
     private String dataPackTopic;
 
     /**
      * bigMQ topic
-     * 下行-- remoteTopic 下发TBOX
+     * 下行-- remoteTopic 下发命令
      */
     private String remoteTopic;
 
     /**
      * bigMQ topic
-     * 上行-- feedBackTopic 回馈
+     * 上行-- feedBackTopic 下发命令回馈
      */
-    private String feedBackTopic;
+    private String remoteFeedBackTopic;
+
+    /**
+     * bigMQ topic
+     * 存储RSA密钥信息 -- activationTopic 在线激活
+     */
+    private String onlineActivationTopic;
 
     public GatherHost() {
         this("host" + Calendar.getInstance().getTimeInMillis());
@@ -268,11 +274,19 @@ public class GatherHost {
         this.remoteTopic = remoteTopic;
     }
 
-    public String getFeedBackTopic() {
-        return feedBackTopic;
+    public String getRemoteFeedBackTopic() {
+        return remoteFeedBackTopic;
     }
 
-    public void setFeedBackTopic(String feedBackTopic) {
-        this.feedBackTopic = feedBackTopic;
+    public void setRemoteFeedBackTopic(String remoteFeedBackTopic) {
+        this.remoteFeedBackTopic = remoteFeedBackTopic;
+    }
+
+    public String getOnlineActivationTopic() {
+        return onlineActivationTopic;
+    }
+
+    public void setOnlineActivationTopic(String onlineActivationTopic) {
+        this.onlineActivationTopic = onlineActivationTopic;
     }
 }

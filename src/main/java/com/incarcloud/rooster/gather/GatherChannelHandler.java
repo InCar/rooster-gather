@@ -5,6 +5,7 @@ import com.incarcloud.rooster.cache.ICacheManager;
 import com.incarcloud.rooster.datapack.DataPack;
 import com.incarcloud.rooster.datapack.IDataParser;
 import com.incarcloud.rooster.gather.remotecmd.session.SessionFactory;
+import com.incarcloud.rooster.mq.RsaActivationMsg;
 import com.incarcloud.rooster.share.Constants;
 import com.incarcloud.rooster.util.GsonFactory;
 import io.netty.buffer.ByteBuf;
@@ -68,7 +69,6 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
         _cacheManager = slot.getCacheManager();
     }
 
-
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
         ByteBuf buf = (ByteBuf) msg;
@@ -110,8 +110,7 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
 
     private void OnRead(ChannelHandlerContext ctx, ByteBuf buf) {
         // 打印日志
-        s_logger.info("Receive Bytes: {}", ByteBufUtil.hexDump(buf));
-        s_logger.info("Parser Class: {}", _parser.getClass());
+        s_logger.info("Parser Class: {}, Receive Bytes: {}", _parser.getClass(), ByteBufUtil.hexDump(buf));
 
         // 初始化
         Channel channel = ctx.channel();
@@ -121,10 +120,13 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
         try {
             // 1.获得设备号
             String deviceId = _parser.getDeviceId(buf);
+            if(StringUtils.isBlank(deviceId)) {
+                return;
+            }
 
             // 2.设置平台公钥和私钥数据(限制激活报文和登陆报文)
             int packType = _parser.getPackType(buf);
-            if (Constants.PackType.ACTIVATE == packType || Constants.PackType.LOGIN == packType) {
+            if (Constants.PackType.LOGIN == packType) {
                 // 2.1  查询RSA密钥信息
                 String rsaPrivateKeyString = _cacheManager.hget(Constants.CacheNamespaceKey.CACHE_DEVICE_PRIVATE_KEY_HASH, deviceId);
                 String rsaPublicKeyString = _cacheManager.hget(Constants.CacheNamespaceKey.CACHE_DEVICE_PUBLIC_KEY_HASH, deviceId);
@@ -159,7 +161,71 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
             metaData = getPackMetaData(listPacks.get(0), _parser);
             s_logger.info("MetaData: {}", metaData);
 
-            // 5.设置SecurityKey缓存(限登陆报文)
+            // 5.激活报文处理
+            if(Constants.PackType.ACTIVATE == packType) {
+                // 激活数据包
+                String deviceCode = (String) metaData.get(Constants.MetaDataMapKey.DEVICE_SN);
+                String vin = (String) metaData.get(Constants.MetaDataMapKey.VIN);
+                String adaptedSeries = (String) metaData.get(Constants.MetaDataMapKey.ADAPTED_SERIES_TYPE);
+
+                // 获取缓存中的设备ID
+                String cacheDeviceCode = _cacheManager.hget(Constants.CacheNamespaceKey.CACHE_DEVICE_SN_HASH, deviceId);
+
+                // 获取缓存中的车架号
+                String cacheVin = _cacheManager.hget(Constants.CacheNamespaceKey.CACHE_DEVICE_ID_HASH, deviceId);
+
+                // 获取缓存中的T-BOX软件包适配车型
+                String cacheAdaptedSeries = _cacheManager.hget(Constants.CacheNamespaceKey.CACHE_DEVICE_ADAPTED_SERIES_HASH, deviceId);
+
+                // 打印车辆设备激活信息
+                s_logger.info("Activate T-Box: deviceId = {}, deviceCode = {}, cacheAdaptedSeries = {}", deviceId, deviceCode, vin, cacheAdaptedSeries);
+
+                // 如果验证失败，不创建RSA公钥信息
+                if (StringUtils.isBlank(cacheDeviceCode)) {
+                    // 原因一：T-BOX不存在
+                    s_logger.info("Activated failed: the device(id={}) is non-exist.", deviceId);
+
+                } else if (!StringUtils.equals(deviceCode, cacheDeviceCode)) {
+                    // 原因二：T-BOX的SN与IMEI绑定关系不正确
+                    s_logger.info("Activated failed: the device(id={}) mismatches sn.[{}-{}]", deviceId, deviceCode, cacheDeviceCode);
+
+                } else if (StringUtils.isNotBlank(cacheVin)) {
+                    // 原因三：VIN已经激活
+                    s_logger.info("Activated failed: the device(id={}) has been activated.[cacheVin={cacheVin}]", deviceId, cacheVin);
+
+                } else if (null != cacheAdaptedSeries && !StringUtils.equals(adaptedSeries, cacheAdaptedSeries)) {
+                    // 原因四：T-BOX软件版本不适配该车系
+                    s_logger.info("Activated failed: the device(id={}) is not adapting this series.[{}-{}]", deviceId, adaptedSeries, cacheAdaptedSeries);
+
+                } else {
+                    // 5.1 临时创建一份新RSA密钥，存储到Redis
+                    RsaActivationMsg activationMsg = new RsaActivationMsg(deviceId);
+
+                    // 5.2 缓存到缓存器(公钥+私钥)
+                    Map<String, String> privateKeyMap = new HashMap<>();
+                    privateKeyMap.put(Constants.RSADataMapKey.N, activationMsg.getRsaPrivateModulus());
+                    privateKeyMap.put(Constants.RSADataMapKey.E, activationMsg.getRsaPrivateExponent());
+
+                    Map<String, String> publicKeyMap = new HashMap<>();
+                    publicKeyMap.put(Constants.RSADataMapKey.N, activationMsg.getRsaPublicModulus());
+                    publicKeyMap.put(Constants.RSADataMapKey.E, String.valueOf(activationMsg.getRsaPublicExponent()));
+
+                    _cacheManager.hset(Constants.CacheNamespaceKey.CACHE_DEVICE_PRIVATE_KEY_HASH, deviceId, GsonFactory.newInstance().createGson().toJson(privateKeyMap));
+                    _cacheManager.hset(Constants.CacheNamespaceKey.CACHE_DEVICE_PUBLIC_KEY_HASH, deviceId, GsonFactory.newInstance().createGson().toJson(publicKeyMap));
+
+                    // 5.3 设置给解析器
+                    _parser.setPrivateKey(deviceId, Base64.getDecoder().decode(activationMsg.getRsaPrivateModulus()), Base64.getDecoder().decode(activationMsg.getRsaPrivateExponent()));
+                    _parser.setPublicKey(deviceId, Base64.getDecoder().decode(activationMsg.getRsaPublicModulus()), Long.valueOf(activationMsg.getRsaPublicExponent()));
+
+                    // 5.4 发送MQ消息交给Transfer继续处理
+                    activationMsg.setDeviceCode(deviceCode);
+                    activationMsg.setVin(vin);
+
+                    _slot.putToActivationMsgToMQ(activationMsg);
+                }
+            }
+
+            // 6.设置SecurityKey缓存(限登陆报文)
             if (Constants.PackType.LOGIN == packType) {
                 // 缓存动态密钥，用于构建远程命令报文
                 byte[] securityKeyBytes = _parser.getSecurityKey(deviceId);
@@ -173,6 +239,7 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
                     if (null != securityKeyOffsetBytes) {
                         securityKeyMap.put(Constants.AESDataMapKey.P, Base64.getEncoder().encodeToString(securityKeyOffsetBytes));
                     }
+
                     // 存储到缓存服务器
                     _cacheManager.hset(Constants.CacheNamespaceKey.CACHE_DEVICE_SECURITY_KEY_HASH, deviceId, GsonFactory.newInstance().createGson().toJson(securityKeyMap));
                 }
@@ -181,7 +248,7 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
                 String vin = (String) metaData.get(Constants.MetaDataMapKey.VIN);
                 String cacheDeviceId = this._cacheManager.hget(Constants.CacheNamespaceKey.CACHE_VEHICLE_VIN_HASH, vin);
                 if (StringUtils.isBlank(cacheDeviceId)) {
-                    // 第一次登录成功说明激活成功，维护VIN与设备号的关系
+                    // 第一次登录成功说明激活成功，维护车架号与设备号的关系
                     String cacheVin = this._cacheManager.hget(Constants.CacheNamespaceKey.CACHE_DEVICE_ID_HASH, deviceId);
                     if (StringUtils.isNotBlank(cacheVin) && StringUtils.equals(cacheVin, vin)) {
                         this._cacheManager.hset(Constants.CacheNamespaceKey.CACHE_VEHICLE_VIN_HASH, cacheVin, deviceId);
@@ -190,7 +257,7 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
                 }
             }
 
-            // 6.扔到host的消息队列
+            // 7.扔到host的消息队列
             for (DataPack pack : listPacks) {
                 // 填充接收时间
                 pack.setReceiveTime(receiveTime); //数据包的接收时间
@@ -203,7 +270,7 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
                 s_logger.debug("Put ({}) to queue ok!", pack);
             }
 
-            //　7.缓存deviceId - Channel 关系
+            //　8.缓存deviceId - Channel 关系
             if (StringUtils.isNotBlank(deviceId)) {
                 SessionFactory.getInstance().createRelationSessionId(ctx, deviceId);
             }
