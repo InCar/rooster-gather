@@ -163,26 +163,59 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
 
             // 5.激活报文处理
             if(Constants.PackType.ACTIVATE == packType) {
-                // 5.1 临时创建一份新RSA密钥，存储到Redis
-                RsaActivationMsg activationMsg = new RsaActivationMsg(deviceId);
+                // 激活数据包
+                String deviceCode = (String) metaData.get(Constants.MetaDataMapKey.DEVICE_SN);
+                String vin = (String) metaData.get(Constants.MetaDataMapKey.VIN);
+                String adaptedSeries = (String) metaData.get(Constants.MetaDataMapKey.ADAPTED_SERIES_TYPE);
 
-                // 5.2 缓存到缓存器(公钥+私钥)
-                Map<String, String> privateKeyMap = new HashMap<>();
-                privateKeyMap.put(Constants.RSADataMapKey.N, activationMsg.getRsaPrivateModulus());
-                privateKeyMap.put(Constants.RSADataMapKey.E, activationMsg.getRsaPrivateExponent());
+                // 获取缓存中的设备ID
+                String cacheDeviceCode = _cacheManager.hget(Constants.CacheNamespaceKey.CACHE_DEVICE_SN_HASH, deviceId);
 
-                Map<String, String> publicKeyMap = new HashMap<>();
-                publicKeyMap.put(Constants.RSADataMapKey.N, activationMsg.getRsaPublicModulus());
-                publicKeyMap.put(Constants.RSADataMapKey.E, String.valueOf(activationMsg.getRsaPublicExponent()));
+                // 获取缓存中的车架号
+                String cacheVin = _cacheManager.hget(Constants.CacheNamespaceKey.CACHE_DEVICE_ID_HASH, deviceId);
 
-                _cacheManager.hset(Constants.CacheNamespaceKey.CACHE_DEVICE_PRIVATE_KEY_HASH, deviceId, GsonFactory.newInstance().createGson().toJson(privateKeyMap));
-                _cacheManager.hset(Constants.CacheNamespaceKey.CACHE_DEVICE_PUBLIC_KEY_HASH, deviceId, GsonFactory.newInstance().createGson().toJson(publicKeyMap));
+                // 获取缓存中的T-BOX软件包适配车型
+                String cacheAdaptedSeries = _cacheManager.hget(Constants.CacheNamespaceKey.CACHE_DEVICE_ADAPTED_SERIES_HASH, deviceId);
 
-                // 5.3 发送MQ消息交给Transfer继续处理
-                activationMsg.setDeviceCode((String) metaData.get(Constants.MetaDataMapKey.DEVICE_SN));
-                activationMsg.setVin((String) metaData.get(Constants.MetaDataMapKey.VIN));
+                // 如果验证失败，不创建RSA公钥信息
+                if (StringUtils.isNotBlank(cacheDeviceCode)) {
+                    // 原因一：T-BOX不存在
+                    //s_logger.info("Activated failed: the device(id={}) is non-exist.", deviceId);
 
-                _slot.putToActivationMsgToMQ(activationMsg);
+                } else if (!StringUtils.equals(deviceCode, cacheDeviceCode)) {
+                    // 原因二：T-BOX的SN与IMEI绑定关系不正确
+                    //s_logger.info("Activated failed: the device(id={}) mismatches sn.", deviceId);
+
+                } else if (StringUtils.isNotBlank(cacheVin)) {
+                    // 原因三：VIN已经激活
+                    //s_logger.info("Activated failed: the device(id={}) has been activated.", deviceId);
+
+                } else if (StringUtils.equals(adaptedSeries, cacheAdaptedSeries)) {
+                    // 原因四：T-BOX软件版本不适配该车系
+                    //s_logger.info("Activated failed: the device(id={}) is not adapting this series.", deviceId);
+
+                } else {
+                    // 5.1 临时创建一份新RSA密钥，存储到Redis
+                    RsaActivationMsg activationMsg = new RsaActivationMsg(deviceId);
+
+                    // 5.2 缓存到缓存器(公钥+私钥)
+                    Map<String, String> privateKeyMap = new HashMap<>();
+                    privateKeyMap.put(Constants.RSADataMapKey.N, activationMsg.getRsaPrivateModulus());
+                    privateKeyMap.put(Constants.RSADataMapKey.E, activationMsg.getRsaPrivateExponent());
+
+                    Map<String, String> publicKeyMap = new HashMap<>();
+                    publicKeyMap.put(Constants.RSADataMapKey.N, activationMsg.getRsaPublicModulus());
+                    publicKeyMap.put(Constants.RSADataMapKey.E, String.valueOf(activationMsg.getRsaPublicExponent()));
+
+                    _cacheManager.hset(Constants.CacheNamespaceKey.CACHE_DEVICE_PRIVATE_KEY_HASH, deviceId, GsonFactory.newInstance().createGson().toJson(privateKeyMap));
+                    _cacheManager.hset(Constants.CacheNamespaceKey.CACHE_DEVICE_PUBLIC_KEY_HASH, deviceId, GsonFactory.newInstance().createGson().toJson(publicKeyMap));
+
+                    // 5.3 发送MQ消息交给Transfer继续处理
+                    activationMsg.setDeviceCode((String) metaData.get(Constants.MetaDataMapKey.DEVICE_SN));
+                    activationMsg.setVin((String) metaData.get(Constants.MetaDataMapKey.VIN));
+
+                    _slot.putToActivationMsgToMQ(activationMsg);
+                }
             }
 
             // 6.设置SecurityKey缓存(限登陆报文)
