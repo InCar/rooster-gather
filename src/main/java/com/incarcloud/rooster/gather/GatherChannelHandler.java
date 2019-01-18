@@ -6,6 +6,7 @@ import com.incarcloud.rooster.datapack.DataPack;
 import com.incarcloud.rooster.datapack.IDataParser;
 import com.incarcloud.rooster.gather.remotecmd.session.SessionFactory;
 import com.incarcloud.rooster.mq.RsaActivationMsg;
+import com.incarcloud.rooster.security.RsaUtil;
 import com.incarcloud.rooster.share.Constants;
 import com.incarcloud.rooster.util.GsonFactory;
 import io.netty.buffer.ByteBuf;
@@ -189,7 +190,7 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
                     // 原因二：T-BOX的SN与IMEI绑定关系不正确
                     s_logger.info("Activated failed: the device(id={}) mismatches sn.[{}-{}]", deviceId, deviceCode, cacheDeviceCode);
 
-                } else if (StringUtils.isNotBlank(cacheVin)) {
+                } else if (StringUtils.isNotBlank(cacheVin) && !StringUtils.equals(vin, cacheVin)) {
                     // 原因三：VIN已经激活
                     s_logger.info("Activated failed: the device(id={}) has been activated.[cacheVin={cacheVin}]", deviceId, cacheVin);
 
@@ -199,7 +200,10 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
 
                 } else {
                     // 5.1 临时创建一份新RSA密钥，存储到Redis
-                    RsaActivationMsg activationMsg = new RsaActivationMsg(deviceId);
+                    RsaUtil.RsaEntity rsaEntity = RsaUtil.generateRsaEntity();
+                    RsaActivationMsg activationMsg = new RsaActivationMsg();
+                    activationMsg.setDeviceId(deviceId);
+                    activationMsg.setRsaEntity(rsaEntity);
 
                     // 5.2 缓存到缓存器(公钥+私钥)
                     Map<String, String> privateKeyMap = new HashMap<>();
@@ -214,8 +218,8 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
                     _cacheManager.hset(Constants.CacheNamespaceKey.CACHE_DEVICE_PUBLIC_KEY_HASH, deviceId, GsonFactory.newInstance().createGson().toJson(publicKeyMap));
 
                     // 5.3 设置给解析器
-                    _parser.setPrivateKey(deviceId, Base64.getDecoder().decode(activationMsg.getRsaPrivateModulus()), Base64.getDecoder().decode(activationMsg.getRsaPrivateExponent()));
-                    _parser.setPublicKey(deviceId, Base64.getDecoder().decode(activationMsg.getRsaPublicModulus()), Long.valueOf(activationMsg.getRsaPublicExponent()));
+                    _parser.setPrivateKey(deviceId, rsaEntity.getPrivateKeyModulusBytes(), rsaEntity.getPrivateKeyExponentBytes());
+                    _parser.setPublicKey(deviceId, rsaEntity.getPublicKeyModulusBytes(), rsaEntity.getPublicKeyExponent());
 
                     // 5.4 发送MQ消息交给Transfer继续处理
                     activationMsg.setDeviceCode(deviceCode);
