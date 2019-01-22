@@ -446,7 +446,7 @@ public class DataPackPostManager {
                                     }
 
                                     // 第一次激活验证成功，维护设备号与车架号的关系
-                                    cacheManager.hset(Constants.CacheNamespaceKey.CACHE_VEHICLE_VIN_HASH, deviceId, vin);
+                                    cacheManager.hset(Constants.CacheNamespaceKey.CACHE_DEVICE_ID_HASH, deviceId, vin);
 
                                     break;
                                 case Constants.PackType.LOGIN:
