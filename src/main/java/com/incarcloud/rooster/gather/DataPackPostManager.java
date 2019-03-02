@@ -12,6 +12,7 @@ import com.incarcloud.rooster.util.GsonFactory;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.channel.Channel;
+import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
@@ -241,11 +242,11 @@ public class DataPackPostManager {
                                         }
                                         session.write(bytes).addListener(channelFuture -> {
                                             if (channelFuture.isSuccess()) {
-                                                s_logger.info("Send msg to T-Box Success: deviceId: {}, bytes: {}", deviceId, new String(bytes));
+                                                s_logger.info("Send msg to T-Box Success: deviceId: {}, bytes: {}", deviceId, Hex.encodeHexString(bytes));
                                                 RemoteCmdFeedbackMsg feedbackMsg = new RemoteCmdFeedbackMsg(remoteCmdSendMsg, 1);
                                                 bigMQ.post(host.getRemoteFeedBackTopic(), GsonFactory.newInstance().createGson().toJson(feedbackMsg).getBytes());
                                             } else {
-                                                s_logger.info("Send msg to T-Box Error: deviceId:{}, bytes: {}", deviceId, new String(bytes));
+                                                s_logger.info("Send msg to T-Box Error: deviceId:{}, bytes: {}", deviceId, Hex.encodeHexString(bytes));
                                                 RemoteCmdFeedbackMsg feedbackMsg = new RemoteCmdFeedbackMsg(remoteCmdSendMsg, 0);
                                                 bigMQ.post(host.getRemoteFeedBackTopic(), GsonFactory.newInstance().createGson().toJson(feedbackMsg).getBytes());
                                             }
