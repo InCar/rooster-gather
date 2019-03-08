@@ -231,6 +231,15 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
 
             // 6.设置SecurityKey缓存(限登陆报文)
             if (Constants.PackType.LOGIN == packType) {
+                // 如果登录报文的VIN和激活报文VIN不一致
+                String vin = (String) metaData.get(Constants.MetaDataMapKey.VIN);
+                String cacheVin = _cacheManager.hget(Constants.CacheNamespaceKey.CACHE_DEVICE_ID_HASH, deviceId);
+                if(StringUtils.isNotBlank(cacheVin) && !StringUtils.equals(cacheVin, vin)) {
+                    // 主动断开客户端连接
+                    channel.close();
+                    return;
+                }
+
                 // 缓存动态密钥，用于构建远程命令报文
                 byte[] securityKeyBytes = _parser.getSecurityKey(deviceId);
                 // 新增ASE加密CBC模式偏移量
@@ -249,11 +258,9 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
                 }
 
                 // 设备只能被激活一次
-                String vin = (String) metaData.get(Constants.MetaDataMapKey.VIN);
                 String cacheDeviceId = _cacheManager.hget(Constants.CacheNamespaceKey.CACHE_VEHICLE_VIN_HASH, vin);
                 if (StringUtils.isBlank(cacheDeviceId)) {
                     // 第一次登录成功说明激活成功，维护车架号与设备号的关系
-                    String cacheVin = _cacheManager.hget(Constants.CacheNamespaceKey.CACHE_DEVICE_ID_HASH, deviceId);
                     if (StringUtils.isNotBlank(cacheVin) && StringUtils.equals(cacheVin, vin)) {
                         _cacheManager.hset(Constants.CacheNamespaceKey.CACHE_VEHICLE_VIN_HASH, cacheVin, deviceId);
                         s_logger.info("Normal login first, activated success: deviceId = {}, vin = {}", deviceId, vin);
