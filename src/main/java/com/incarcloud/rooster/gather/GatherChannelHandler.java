@@ -237,6 +237,8 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
                 if(StringUtils.isNotBlank(cacheVin) && !StringUtils.equals(cacheVin, vin)) {
                     // 主动断开客户端连接
                     channel.close();
+                    // 打印异常日志
+                    s_logger.info("Activated T-BOX({}) for vin({}) used illegal login info(errorVin = {}).", deviceId, cacheVin, vin);
                     return;
                 }
 
