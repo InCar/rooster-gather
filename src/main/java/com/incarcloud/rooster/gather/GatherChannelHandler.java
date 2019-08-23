@@ -175,6 +175,9 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
                 // 获取缓存中的车架号
                 String cacheVin = _cacheManager.hget(Constants.CacheNamespaceKey.CACHE_DEVICE_ID_HASH, deviceId);
 
+                // 获取缓存中的设备ID
+                String cacheDeviceId = _cacheManager.hget(Constants.CacheNamespaceKey.CACHE_VEHICLE_VIN_HASH, vin);
+
                 // 获取缓存中的T-BOX软件包适配车型
                 String cacheAdaptedSeries = _cacheManager.hget(Constants.CacheNamespaceKey.CACHE_DEVICE_ADAPTED_SERIES_HASH, deviceId);
 
@@ -191,14 +194,18 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
                     s_logger.info("Activated failed: the device(id={}) mismatches sn.[{}-{}]", deviceId, deviceCode, cacheDeviceCode);
 
                 } else if (StringUtils.isNotBlank(cacheVin) && !StringUtils.equals(vin, cacheVin)) {
-                    // 原因三：VIN已经激活
-                    s_logger.info("Activated failed: the device(id={}) has been activated.[cacheVin={cacheVin}]", deviceId, cacheVin);
+                    // 原因三：T-BOX已经绑定车辆
+                    s_logger.info("Activated failed: the device(id={}) has been activated.[cacheVin={}]", deviceId, cacheVin);
 
                 } else if (null != cacheAdaptedSeries && !StringUtils.equals(adaptedSeries, cacheAdaptedSeries)) {
                     // 原因四：T-BOX软件版本不适配该车系
                     s_logger.info("Activated failed: the device(id={}) is not adapting this series.[{}-{}]", deviceId, adaptedSeries, cacheAdaptedSeries);
 
-                } else {
+                } else if (null != cacheDeviceId && !StringUtils.equals(deviceId, cacheDeviceId)){
+                    // 原因五：车辆已经绑定T-BOX
+                    s_logger.info("Activated failed: the vin (id={}) has been activated.[deviceId={}]", vin, cacheDeviceId);
+
+                }else {
                     // 5.1 临时创建一份新RSA密钥，存储到Redis
                     RsaUtil.RsaEntity rsaEntity = RsaUtil.generateRsaEntity();
                     RsaActivationMsg activationMsg = new RsaActivationMsg();
@@ -242,6 +249,17 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
                     return;
                 }
 
+                //校验车辆绑定的deviceId
+                String cacheDeviceId = _cacheManager.hget(Constants.CacheNamespaceKey.CACHE_VEHICLE_VIN_HASH, vin);
+                //非第一次登录： VIN码->设备 关联关系与缓存不符
+                if (null != cacheDeviceId && !StringUtils.equals(deviceId, cacheDeviceId)){
+                    // 主动断开客户端连接
+                    channel.close();
+                    // 打印异常日志
+                    s_logger.info("Activated vin({}) for deviceId({}) used illegal login info(errorDeviceId = {})", vin, cacheDeviceId,deviceId);
+
+                }
+
                 // 缓存动态密钥，用于构建远程命令报文
                 byte[] securityKeyBytes = _parser.getSecurityKey(deviceId);
                 // 新增ASE加密CBC模式偏移量
@@ -260,7 +278,7 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
                 }
 
                 // 设备只能被激活一次
-                String cacheDeviceId = _cacheManager.hget(Constants.CacheNamespaceKey.CACHE_VEHICLE_VIN_HASH, vin);
+                //String cacheDeviceId = _cacheManager.hget(Constants.CacheNamespaceKey.CACHE_VEHICLE_VIN_HASH, vin);
                 if (StringUtils.isBlank(cacheDeviceId)) {
                     // 第一次登录成功说明激活成功，维护车架号与设备号的关系
                     if (StringUtils.isNotBlank(cacheVin) && StringUtils.equals(cacheVin, vin)) {
