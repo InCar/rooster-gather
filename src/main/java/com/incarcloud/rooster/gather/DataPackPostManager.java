@@ -440,7 +440,7 @@ public class DataPackPostManager {
 
                                     } else if (StringUtils.isNotBlank(cacheVin) && !StringUtils.equals(vin, cacheVin)) {
                                         // 原因三：VIN已经激活(设备已激活)
-                                        resp = dataParser.createResponse(dataPack, ERespReason.VIN_ACTIVATED);
+                                        resp = dataParser.createResponse(dataPack, ERespReason.DEVICE_ACTIVATED);
                                         //s_logger.info("Activated failed: the device(id={}) has been activated.[cacheVin={cacheVin}]", deviceId, cacheVin);
 
                                     } else if (null != cacheAdaptedSeries && !StringUtils.equals(adaptedSeries, cacheAdaptedSeries)) {
