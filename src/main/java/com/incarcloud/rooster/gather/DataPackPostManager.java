@@ -418,6 +418,9 @@ public class DataPackPostManager {
                                     // 获取缓存中的车架号
                                     String cacheVin = cacheManager.hget(Constants.CacheNamespaceKey.CACHE_DEVICE_ID_HASH, deviceId);
 
+                                    //取出缓存中VIN码对应的设备ID
+                                    String cacheDeviceId = cacheManager.hget(Constants.CacheNamespaceKey.CACHE_VEHICLE_VIN_HASH, vin);
+
                                     // 获取缓存中的T-BOX软件包适配车型
                                     String cacheAdaptedSeries = cacheManager.hget(Constants.CacheNamespaceKey.CACHE_DEVICE_ADAPTED_SERIES_HASH, deviceId);
 
@@ -436,14 +439,17 @@ public class DataPackPostManager {
                                         //s_logger.info("Activated failed: the device(id={}) mismatches sn.[{}-{}]", deviceId, deviceCode, cacheDeviceCode);
 
                                     } else if (StringUtils.isNotBlank(cacheVin) && !StringUtils.equals(vin, cacheVin)) {
-                                        // 原因三：VIN已经激活
-                                        resp = dataParser.createResponse(dataPack, ERespReason.VIN_ACTIVATED);
+                                        // 原因三：VIN已经激活(设备已激活)
+                                        resp = dataParser.createResponse(dataPack, ERespReason.DEVICE_ACTIVATED);
                                         //s_logger.info("Activated failed: the device(id={}) has been activated.[cacheVin={cacheVin}]", deviceId, cacheVin);
 
                                     } else if (null != cacheAdaptedSeries && !StringUtils.equals(adaptedSeries, cacheAdaptedSeries)) {
                                         // 原因四：T-BOX软件版本不适配该车系
                                         resp = dataParser.createResponse(dataPack, ERespReason.NON_ADAPTED_SERIES);
                                         //s_logger.info("Activated failed: the device(id={}) is not adapting this series.[{}-{}]", deviceId, adaptedSeries, cacheAdaptedSeries);
+                                    } else if(null != cacheDeviceId && !StringUtils.equals(deviceId, cacheDeviceId)){
+                                        // 原因五：VIN已经激活(VIN码已激活)
+                                        resp = dataParser.createResponse(dataPack, ERespReason.VIN_ACTIVATED);
                                     }
 
                                     // 第一次激活验证成功，维护设备号与车架号的关系
