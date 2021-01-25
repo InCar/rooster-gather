@@ -39,6 +39,11 @@ public class DataPackPostManager {
     private static Logger s_logger = LoggerFactory.getLogger(DataPackPostManager.class);
 
     /**
+     * 激活日志
+     */
+    private static Logger activeLogger = LoggerFactory.getLogger("activeLogger");
+
+    /**
      * 执行定时监控运行状态的线程池
      */
     private ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1);
@@ -406,6 +411,7 @@ public class DataPackPostManager {
                             // 判断报文类型
                             switch (packType) {
                                 case Constants.PackType.ACTIVATE:
+                                    activeLogger.debug("[{}] Success send to MQ: {}", DataPackPostManager.class.getSimpleName(), sendResult.getData());
                                     /* 激活数据包 */
                                     String vin = (String) metaData.get(Constants.MetaDataMapKey.VIN);
                                     String deviceId = (String) metaData.get(Constants.MetaDataMapKey.DEVICE_ID);
@@ -470,6 +476,12 @@ public class DataPackPostManager {
                         }
                         s_logger.info("Success send resp: {}", ByteBufUtil.hexDump(resp));
 
+                        //打印响应激活报文
+                        if (null != metaData && Constants.PackType.ACTIVATE == (int) metaData.get(Constants.MetaDataMapKey.PACK_TYPE)) {
+                            activeLogger.info("[{}] Success send resp: {}", DataPackPostManager.class.getSimpleName(), ByteBufUtil.hexDump(resp));
+                        }
+
+
                         // 需要回应设备
                         if (null != resp) {
                             channel.writeAndFlush(resp);
@@ -479,6 +491,12 @@ public class DataPackPostManager {
                         s_logger.error("Failed send to MQ:" + sendResult.getException().getMessage());
                         ByteBuf resp = dataParser.createResponse(dataPack, ERespReason.ERROR);
                         s_logger.info("Failed send resp: {}", ByteBufUtil.hexDump(resp));
+
+                        //打印响应激活报文
+                        if (null != metaData && Constants.PackType.ACTIVATE == (int) metaData.get(Constants.MetaDataMapKey.PACK_TYPE)) {
+                            activeLogger.error("[{}] Failed send to MQ: {}", DataPackPostManager.class.getSimpleName(), sendResult.getException().getMessage());
+                            activeLogger.info("[{}] Failed send resp: {}", DataPackPostManager.class.getSimpleName(), ByteBufUtil.hexDump(resp));
+                        }
 
                         // 需要回应设备
                         if (null != resp) {

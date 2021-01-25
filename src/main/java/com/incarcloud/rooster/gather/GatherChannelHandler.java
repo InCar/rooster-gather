@@ -1,5 +1,6 @@
 package com.incarcloud.rooster.gather;
 
+import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.incarcloud.rooster.cache.ICacheManager;
 import com.incarcloud.rooster.datapack.DataPack;
@@ -35,6 +36,11 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
      * Logger
      */
     private static Logger s_logger = LoggerFactory.getLogger(GatherChannelHandler.class);
+
+    /**
+     * 激活日志
+     */
+    private static Logger activeLogger = LoggerFactory.getLogger("activeLogger");
 
     /**
      * 设备报文Meta数据
@@ -127,6 +133,10 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
 
             // 2.设置平台公钥和私钥数据(限制激活报文和登陆报文)
             int packType = _parser.getPackType(buf);
+            // 打印轻量解析前激活报文
+            if (Constants.PackType.ACTIVATE == packType) {
+                activeLogger.debug("[{}] Receive Active Bytes: {}", GatherChannelHandler.class.getSimpleName(), ByteBufUtil.hexDump(buf));
+            }
             if (Constants.PackType.LOGIN == packType) {
                 // 2.1  查询RSA密钥信息
                 String rsaPrivateKeyString = _cacheManager.hget(Constants.CacheNamespaceKey.CACHE_DEVICE_PRIVATE_KEY_HASH, deviceId);
@@ -164,6 +174,8 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
 
             // 5.激活报文处理
             if(Constants.PackType.ACTIVATE == packType) {
+                // 打印解密之后的激活报文
+                activeLogger.debug("[{}] Parse Active Bytes: {}", GatherChannelHandler.class.getSimpleName(), ByteBufUtil.hexDump(listPacks.get(0).getDataBytes()));
                 // 激活数据包
                 String deviceCode = (String) metaData.get(Constants.MetaDataMapKey.DEVICE_SN);
                 String vin = (String) metaData.get(Constants.MetaDataMapKey.VIN);
@@ -188,22 +200,27 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
                 if (StringUtils.isBlank(cacheDeviceCode)) {
                     // 原因一：T-BOX不存在
                     s_logger.info("Activated failed: the device(id={}) is non-exist.", deviceId);
+                    activeLogger.info("Activated failed: the device(id={}) is non-exist.", deviceId);
 
                 } else if (!StringUtils.equals(deviceCode, cacheDeviceCode)) {
                     // 原因二：T-BOX的SN与IMEI绑定关系不正确
                     s_logger.info("Activated failed: the device(id={}) mismatches sn.[{}-{}]", deviceId, deviceCode, cacheDeviceCode);
+                    activeLogger.info("Activated failed: the device(id={}) mismatches sn.[{}-{}]", deviceId, deviceCode, cacheDeviceCode);
 
                 } else if (StringUtils.isNotBlank(cacheVin) && !StringUtils.equals(vin, cacheVin)) {
                     // 原因三：T-BOX已经绑定车辆
                     s_logger.info("Activated failed: the device(id={}) has been activated.[cacheVin={}]", deviceId, cacheVin);
+                    activeLogger.info("Activated failed: the device(id={}) has been activated.[cacheVin={}]", deviceId, cacheVin);
 
                 } else if (null != cacheAdaptedSeries && !StringUtils.equals(adaptedSeries, cacheAdaptedSeries)) {
                     // 原因四：T-BOX软件版本不适配该车系
                     s_logger.info("Activated failed: the device(id={}) is not adapting this series.[{}-{}]", deviceId, adaptedSeries, cacheAdaptedSeries);
+                    activeLogger.info("Activated failed: the device(id={}) is not adapting this series.[{}-{}]", deviceId, adaptedSeries, cacheAdaptedSeries);
 
                 } else if (null != cacheDeviceId && !StringUtils.equals(deviceId, cacheDeviceId)){
                     // 原因五：车辆已经绑定T-BOX
                     s_logger.info("Activated failed: the vin (id={}) has been activated.[deviceId={}]", vin, cacheDeviceId);
+                    activeLogger.info("Activated failed: the vin (id={}) has been activated.[deviceId={}]", vin, cacheDeviceId);
 
                 }else {
                     // 5.1 临时创建一份新RSA密钥，存储到Redis
@@ -232,6 +249,7 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
                     activationMsg.setDeviceCode(deviceCode);
                     activationMsg.setVin(vin);
 
+                    activeLogger.debug("[{}] Send active msg to transfer: {}", GatherChannelHandler.class.getSimpleName(), GsonFactory.newInstance().createGson().toJson(activationMsg));
                     _slot.putToActivationMsgToMQ(activationMsg);
                 }
             }
@@ -284,6 +302,7 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
                     if (StringUtils.isNotBlank(cacheVin) && StringUtils.equals(cacheVin, vin)) {
                         _cacheManager.hset(Constants.CacheNamespaceKey.CACHE_VEHICLE_VIN_HASH, cacheVin, deviceId);
                         s_logger.info("Normal login first, activated success: deviceId = {}, vin = {}", deviceId, vin);
+                        activeLogger.info("[{}] Normal login first, activated success: deviceId = {}, vin = {}", GatherChannelHandler.class.getSimpleName(), deviceId, vin);
                     }
                 }
             }
