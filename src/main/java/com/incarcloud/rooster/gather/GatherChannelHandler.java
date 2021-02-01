@@ -164,6 +164,9 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
             listPacks = _parser.extract(buf);
             if (null == listPacks || 0 == listPacks.size()) {
                 s_logger.info("No packs!!!");
+                if (Constants.PackType.LOGIN == packType) {
+                    activeLogger.info("[{}] No packs!!!", GatherChannelHandler.class.getSimpleName());
+                }
                 return;
             }
             s_logger.info("DataPackList Size: {}", listPacks.size());
