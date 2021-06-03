@@ -43,6 +43,11 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
     private static Logger activeLogger = LoggerFactory.getLogger("activeLogger");
 
     /**
+     * 故障日志
+     */
+    private static Logger faultLogger = LoggerFactory.getLogger("faultLogger");
+
+    /**
      * 设备报文Meta数据
      */
     private Map<String, Object> metaData;
@@ -137,6 +142,10 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
             if (Constants.PackType.ACTIVATE == packType) {
                 activeLogger.debug("[{}] Receive Active Bytes: {}", GatherChannelHandler.class.getSimpleName(), ByteBufUtil.hexDump(buf));
             }
+            // 打印轻量解析前故障报文
+            if (Constants.PackType.FAULT == packType) {
+                faultLogger.debug("[{}] Receive Fault Bytes: {}", GatherChannelHandler.class.getSimpleName(), ByteBufUtil.hexDump(buf));
+            }
             if (Constants.PackType.LOGIN == packType) {
                 // 2.1  查询RSA密钥信息
                 String rsaPrivateKeyString = _cacheManager.hget(Constants.CacheNamespaceKey.CACHE_DEVICE_PRIVATE_KEY_HASH, deviceId);
@@ -167,6 +176,9 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
                 if (Constants.PackType.ACTIVATE == packType) {
                     activeLogger.info("[{}] No packs!!!", GatherChannelHandler.class.getSimpleName());
                 }
+                if (Constants.PackType.FAULT == packType) {
+                    faultLogger.info("[{}] No packs!!!", GatherChannelHandler.class.getSimpleName());
+                }
                 return;
             }
             s_logger.info("DataPackList Size: {}", listPacks.size());
@@ -174,7 +186,10 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
             // 4.获得设备报文Meta数据
             metaData = getPackMetaData(listPacks.get(0), _parser);
             s_logger.info("MetaData: {}", metaData);
-
+            if (Constants.PackType.FAULT == packType) {
+                // 打印解密之后的故障报文
+                faultLogger.debug("[{}] Parse Fault Bytes: {}", GatherChannelHandler.class.getSimpleName(), ByteBufUtil.hexDump(listPacks.get(0).getDataBytes()));
+            }
             // 5.激活报文处理
             if(Constants.PackType.ACTIVATE == packType) {
                 // 打印解密之后的激活报文
