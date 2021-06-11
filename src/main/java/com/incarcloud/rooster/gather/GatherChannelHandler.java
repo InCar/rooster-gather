@@ -191,6 +191,8 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
                 faultLogger.debug("[{}] Parse Fault Bytes: {}", GatherChannelHandler.class.getSimpleName(), ByteBufUtil.hexDump(listPacks.get(0).getDataBytes()));
             }
             // 5.激活报文处理
+            int errorCode = 0;
+            String errorMessage = "SUCCESSS";
             if(Constants.PackType.ACTIVATE == packType) {
                 // 打印解密之后的激活报文
                 activeLogger.debug("[{}] Parse Active Bytes: {}", GatherChannelHandler.class.getSimpleName(), ByteBufUtil.hexDump(listPacks.get(0).getDataBytes()));
@@ -220,25 +222,44 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
                     s_logger.info("Activated failed: the device(id={}) is non-exist.", deviceId);
                     activeLogger.info("Activated failed: the device(id={}) is non-exist.", deviceId);
 
+                    // 设置附加信息
+                    errorCode = 1;
+                    errorMessage = "T-BOX不存在";
+
                 } else if (!StringUtils.equals(deviceCode, cacheDeviceCode)) {
                     // 原因二：T-BOX的SN与IMEI绑定关系不正确
                     s_logger.info("Activated failed: the device(id={}) mismatches sn.[{}-{}]", deviceId, deviceCode, cacheDeviceCode);
                     activeLogger.info("Activated failed: the device(id={}) mismatches sn.[{}-{}]", deviceId, deviceCode, cacheDeviceCode);
+
+                    // 设置附加信息
+                    errorCode = 2;
+                    errorMessage = "T-BOX的SN与IMEI绑定关系不正确";
 
                 } else if (StringUtils.isNotBlank(cacheVin) && !StringUtils.equals(vin, cacheVin)) {
                     // 原因三：T-BOX已经绑定车辆
                     s_logger.info("Activated failed: the device(id={}) has been activated.[cacheVin={}]", deviceId, cacheVin);
                     activeLogger.info("Activated failed: the device(id={}) has been activated.[cacheVin={}]", deviceId, cacheVin);
 
+                    // 设置附加信息
+                    errorCode = 3;
+                    errorMessage = "T-BOX已经绑定车辆";
+
                 } else if (null != cacheAdaptedSeries && !StringUtils.equals(adaptedSeries, cacheAdaptedSeries)) {
                     // 原因四：T-BOX软件版本不适配该车系
                     s_logger.info("Activated failed: the device(id={}) is not adapting this series.[{}-{}]", deviceId, adaptedSeries, cacheAdaptedSeries);
                     activeLogger.info("Activated failed: the device(id={}) is not adapting this series.[{}-{}]", deviceId, adaptedSeries, cacheAdaptedSeries);
 
+                    // 设置附加信息
+                    errorCode = 4;
+                    errorMessage = "T-BOX软件版本不适配该车系";
                 } else if (null != cacheDeviceId && !StringUtils.equals(deviceId, cacheDeviceId)){
                     // 原因五：车辆已经绑定T-BOX
                     s_logger.info("Activated failed: the vin (id={}) has been activated.[deviceId={}]", vin, cacheDeviceId);
                     activeLogger.info("Activated failed: the vin (id={}) has been activated.[deviceId={}]", vin, cacheDeviceId);
+
+                    // 设置附加信息
+                    errorCode = 5;
+                    errorMessage = "车辆已经绑定T-BOX";
 
                 }else {
                     // 5.1 临时创建一份新RSA密钥，存储到Redis
@@ -269,6 +290,10 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
 
                     activeLogger.debug("[{}] Send active msg to transfer: {}", GatherChannelHandler.class.getSimpleName(), GsonFactory.newInstance().createGson().toJson(activationMsg));
                     _slot.putToActivationMsgToMQ(activationMsg);
+
+                    // 第一次激活验证成功，维护设备号与车架号的关系
+                    _cacheManager.hset(Constants.CacheNamespaceKey.CACHE_DEVICE_ID_HASH, deviceId, vin);
+
                 }
             }
 
@@ -332,6 +357,10 @@ public class GatherChannelHandler extends ChannelInboundHandlerAdapter {
 
                 // 处理消息队列
                 DataPackWrap dpw = new DataPackWrap(channel, _parser, pack, metaData);
+
+                // 设置附加信息
+                dpw.setErrCode(errorCode);
+                dpw.setErrMsg(errorMessage);
 
                 // 放到缓存队列
                 _slot.putToCacheQueue(dpw);

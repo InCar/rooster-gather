@@ -31,6 +31,15 @@ public class DataPackWrap {
     private Map<String, Object> metaData;
 
     /**
+     * 错误码
+     */
+    private int errCode = 0;
+    /**
+     * 错误描述
+     */
+    private String errMsg;
+
+    /**
      * 构造函数
      *
      * @param channel    会话通道
@@ -71,5 +80,21 @@ public class DataPackWrap {
 
     public void setMetaData(Map<String, Object> metaData) {
         this.metaData = metaData;
+    }
+
+    public int getErrCode() {
+        return errCode;
+    }
+
+    public void setErrCode(int errCode) {
+        this.errCode = errCode;
+    }
+
+    public String getErrMsg() {
+        return errMsg;
+    }
+
+    public void setErrMsg(String errMsg) {
+        this.errMsg = errMsg;
     }
 }

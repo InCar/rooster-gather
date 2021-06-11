@@ -413,60 +413,40 @@ public class DataPackPostManager {
                             // 数据包类型
                             int packType = (int) metaData.get(Constants.MetaDataMapKey.PACK_TYPE);
 
+                            // 错误码信息
+                            int errCode = packWrapBatch.get(i).getErrCode();
+                            String errMsg = packWrapBatch.get(i).getErrMsg();
+                            s_logger.debug("RespValid -> errCode: {}, errMsg: {}", errCode, errMsg);
+
                             // 判断报文类型
                             switch (packType) {
                                 case Constants.PackType.ACTIVATE:
                                     activeLogger.debug("[{}] Success send to MQ: {}", DataPackPostManager.class.getSimpleName(), sendResult.getData());
-                                    /* 激活数据包 */
-                                    String vin = (String) metaData.get(Constants.MetaDataMapKey.VIN);
-                                    String deviceId = (String) metaData.get(Constants.MetaDataMapKey.DEVICE_ID);
-                                    String deviceCode = (String) metaData.get(Constants.MetaDataMapKey.DEVICE_SN);
-                                    String adaptedSeries = (String) metaData.get(Constants.MetaDataMapKey.ADAPTED_SERIES_TYPE);
-
-                                    // 获取缓存中的设备ID
-                                    String cacheDeviceCode = cacheManager.hget(Constants.CacheNamespaceKey.CACHE_DEVICE_SN_HASH, deviceId);
-
-                                    // 获取缓存中的车架号
-                                    String cacheVin = cacheManager.hget(Constants.CacheNamespaceKey.CACHE_DEVICE_ID_HASH, deviceId);
-
-                                    //取出缓存中VIN码对应的设备ID
-                                    String cacheDeviceId = cacheManager.hget(Constants.CacheNamespaceKey.CACHE_VEHICLE_VIN_HASH, vin);
-
-                                    // 获取缓存中的T-BOX软件包适配车型
-                                    String cacheAdaptedSeries = cacheManager.hget(Constants.CacheNamespaceKey.CACHE_DEVICE_ADAPTED_SERIES_HASH, deviceId);
-
-                                    // 打印车辆设备激活信息
-                                    //s_logger.info("Activate T-Box: deviceId = {}, deviceCode = {}, cacheAdaptedSeries = {}", deviceId, deviceCode, vin, cacheAdaptedSeries);
-
                                     // 返回设备激活失败状态
-                                    if (StringUtils.isBlank(cacheDeviceCode)) {
-                                        // 原因一：T-BOX不存在
-                                        resp = dataParser.createResponse(dataPack, ERespReason.NON_EXIST_DEVICE);
-                                        //s_logger.info("Activated failed: the device(id={}) is non-exist.", deviceId);
-
-                                    } else if (!StringUtils.equals(deviceCode, cacheDeviceCode)) {
-                                        // 原因二：T-BOX的SN与IMEI绑定关系不正确
-                                        resp = dataParser.createResponse(dataPack, ERespReason.MISMATCH_DEVICE_SN);
-                                        //s_logger.info("Activated failed: the device(id={}) mismatches sn.[{}-{}]", deviceId, deviceCode, cacheDeviceCode);
-
-                                    } else if (StringUtils.isNotBlank(cacheVin) && !StringUtils.equals(vin, cacheVin)) {
-                                        // 原因三：VIN已经激活(设备已激活)
-                                        resp = dataParser.createResponse(dataPack, ERespReason.DEVICE_ACTIVATED);
-                                        //s_logger.info("Activated failed: the device(id={}) has been activated.[cacheVin={cacheVin}]", deviceId, cacheVin);
-
-                                    } else if (null != cacheAdaptedSeries && !StringUtils.equals(adaptedSeries, cacheAdaptedSeries)) {
-                                        // 原因四：T-BOX软件版本不适配该车系
-                                        resp = dataParser.createResponse(dataPack, ERespReason.NON_ADAPTED_SERIES);
-                                        //s_logger.info("Activated failed: the device(id={}) is not adapting this series.[{}-{}]", deviceId, adaptedSeries, cacheAdaptedSeries);
-                                    } else if(null != cacheDeviceId && !StringUtils.equals(deviceId, cacheDeviceId)){
-                                        // 原因五：VIN已经激活(VIN码已激活)
-                                        resp = dataParser.createResponse(dataPack, ERespReason.VIN_ACTIVATED);
-                                    }
-
-                                    // 第一次激活验证成功，维护设备号与车架号的关系
-                                    cacheManager.hset(Constants.CacheNamespaceKey.CACHE_DEVICE_ID_HASH, deviceId, vin);
-
-                                    break;
+                                   switch (errCode) {
+                                       case 1:
+                                           // 原因一：T-BOX不存在
+                                           resp = dataParser.createResponse(dataPack, ERespReason.NON_EXIST_DEVICE);
+                                           break;
+                                       case 2:
+                                           // 原因二：T-BOX的SN与IMEI绑定关系不正确
+                                           resp = dataParser.createResponse(dataPack, ERespReason.MISMATCH_DEVICE_SN);
+                                           break;
+                                       case 3:
+                                           // 原因三：VIN已经激活(设备已激活)
+                                           resp = dataParser.createResponse(dataPack, ERespReason.DEVICE_ACTIVATED);
+                                           break;
+                                       case 4:
+                                           // 原因四：T-BOX软件版本不适配该车系
+                                           resp = dataParser.createResponse(dataPack, ERespReason.NON_ADAPTED_SERIES);
+                                           break;
+                                       case 5:
+                                           // 原因五：VIN已经激活(VIN码已激活)
+                                           resp = dataParser.createResponse(dataPack, ERespReason.VIN_ACTIVATED);
+                                           break;
+                                       default:
+                                   }
+                                   break;
                                 case Constants.PackType.LOGIN:
                                     /* 登陆数据包 */
                                     break;
