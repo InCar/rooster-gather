@@ -38,15 +38,6 @@ public class DataPackPostManager {
      */
     private static Logger s_logger = LoggerFactory.getLogger(DataPackPostManager.class);
 
-    /**
-     * 激活日志
-     */
-    private static Logger activeLogger = LoggerFactory.getLogger("activeLogger");
-
-    /**
-     * 故障日志
-     */
-    private static Logger faultLogger = LoggerFactory.getLogger("faultLogger");
 
     /**
      * 执行定时监控运行状态的线程池
@@ -421,7 +412,6 @@ public class DataPackPostManager {
                             // 判断报文类型
                             switch (packType) {
                                 case Constants.PackType.ACTIVATE:
-                                    activeLogger.debug("[{}] Success send to MQ: {}", DataPackPostManager.class.getSimpleName(), sendResult.getData());
                                     // 返回设备激活失败状态
                                    switch (errCode) {
                                        case 1:
@@ -450,9 +440,6 @@ public class DataPackPostManager {
                                 case Constants.PackType.LOGIN:
                                     /* 登陆数据包 */
                                     break;
-                                case Constants.PackType.FAULT:
-                                    faultLogger.debug("[{}] Success send to MQ: {}", DataPackPostManager.class.getSimpleName(), sendResult.getData());
-                                    break;
                                 default:
                                     /* 非激活或登陆数据包 */
                             }
@@ -464,16 +451,6 @@ public class DataPackPostManager {
                         }
                         s_logger.info("Success send resp: {}", ByteBufUtil.hexDump(resp));
 
-                        //打印响应激活报文
-                        if (null != metaData && Constants.PackType.ACTIVATE == (int) metaData.get(Constants.MetaDataMapKey.PACK_TYPE)) {
-                            activeLogger.info("[{}] Success send resp: {}", DataPackPostManager.class.getSimpleName(), ByteBufUtil.hexDump(resp));
-                        }
-
-                        //打印响应故障报文
-                        if (null != metaData && Constants.PackType.FAULT == (int) metaData.get(Constants.MetaDataMapKey.PACK_TYPE)) {
-                            faultLogger.info("[{}] Success send resp: {}", DataPackPostManager.class.getSimpleName(), ByteBufUtil.hexDump(resp));
-                        }
-
                         // 需要回应设备
                         if (null != resp) {
                             channel.writeAndFlush(resp);
@@ -483,17 +460,6 @@ public class DataPackPostManager {
                         s_logger.error("Failed send to MQ:" + sendResult.getException().getMessage());
                         ByteBuf resp = dataParser.createResponse(dataPack, ERespReason.ERROR);
                         s_logger.info("Failed send resp: {}", ByteBufUtil.hexDump(resp));
-
-                        //打印响应激活报文
-                        if (null != metaData && Constants.PackType.ACTIVATE == (int) metaData.get(Constants.MetaDataMapKey.PACK_TYPE)) {
-                            activeLogger.error("[{}] Failed send to MQ: {}", DataPackPostManager.class.getSimpleName(), sendResult.getException().getMessage());
-                            activeLogger.info("[{}] Failed send resp: {}", DataPackPostManager.class.getSimpleName(), ByteBufUtil.hexDump(resp));
-                        }
-                        //打印响应故障报文
-                        if (null != metaData && Constants.PackType.FAULT == (int) metaData.get(Constants.MetaDataMapKey.PACK_TYPE)) {
-                            faultLogger.error("[{}] Failed send to MQ: {}", DataPackPostManager.class.getSimpleName(), sendResult.getException().getMessage());
-                            faultLogger.info("[{}] Failed send resp: {}", DataPackPostManager.class.getSimpleName(), ByteBufUtil.hexDump(resp));
-                        }
 
                         // 需要回应设备
                         if (null != resp) {
