@@ -1,5 +1,5 @@
 group 'com.incarcloud'
-version '2.4.10-SNAPSHOT'
+version '2.5.1-SNAPSHOT'
 
 allprojects {
     apply plugin: 'java'
@@ -51,7 +51,7 @@ allprojects {
 }
 
 dependencies {
-    compile("com.incarcloud:rooster-shared:2.4.+")
+    compile("com.incarcloud:rooster-shared:2.5.+")
 
     compile("org.slf4j:slf4j-api:1.7.+")
 
